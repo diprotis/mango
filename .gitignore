@@ -1,0 +1,78 @@
+# Git
+.gitmessage
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv
+venv/
+ENV/
+env/
+.env
+.python-version
+
+# uv
+.uv-cache/
+uv.lock
+
+# CDK
+cdk.out/
+.cdk.staging/
+cdk.context.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# AWS
+.aws-sam/
+samconfig.toml
+
+# Secrets
+*.pem
+*.key
+secrets/
+.secrets/
+
+# Logs
+*.log
+logs/
+
+# Testing
+.coverage
+.pytest_cache/
+junit/
+coverage.xml
+*.cover
+
+# Terraform (if mixed)
+*.tfstate
+*.tfstate.*
+.terraform/
