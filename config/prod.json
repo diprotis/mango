@@ -1,0 +1,5 @@
+{
+  "environment": "prod",
+  "stackNamePrefix": "Mango",
+  "region": "us-east-1"
+}
