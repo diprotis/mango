@@ -16,34 +16,34 @@ def load_config(stage: str) -> dict:
         return {
             "environment": stage,
             "stackNamePrefix": f"ReadingJourney-{stage.title()}",
-            "region": "us-east-1"
+            "region": "us-east-1",
         }
 
 
 class SimpleStack(Stack):
     def __init__(self, scope, construct_id, config: dict, **kwargs):
         super().__init__(scope, construct_id, **kwargs)
-        
+
         env_name = config["environment"]
-        
+
         # Create a simple S3 bucket with environment-specific naming
         bucket = s3.Bucket(
             self,
             "MyTestBucket",
             bucket_name=f"my-test-bucket-{env_name}-{self.account}-{self.region}",
             removal_policy=cdk.RemovalPolicy.DESTROY,
-            auto_delete_objects=True
+            auto_delete_objects=True,
         )
-        
+
         # Create a simple Lambda function
         hello_lambda = lambda_.Function(
             self,
             "HelloWorldFunction",
             runtime=lambda_.Runtime.PYTHON_3_10,
             code=lambda_.Code.from_asset("src/lambdas/hello_world"),
-            handler="index.handler"
+            handler="index.handler",
         )
-        
+
         # Grant Lambda permission to read from bucket
         bucket.grant_read(hello_lambda)
 
@@ -60,13 +60,13 @@ config = load_config(stage)
 stack_name = f"{config['stackNamePrefix']}-SimpleStack"
 
 SimpleStack(
-    app, 
+    app,
     stack_name,
     config,
     env=cdk.Environment(
         account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
-        region=config.get("region", "us-east-1")
-    )
+        region=config.get("region", "us-east-1"),
+    ),
 )
 
 app.synth()
