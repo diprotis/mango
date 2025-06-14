@@ -1,2 +1,0 @@
-# Shared Lambda layer dependencies
-# Add packages here that are shared across multiple Lambda functions
