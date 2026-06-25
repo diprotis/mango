@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "swiftlang.swift-vscode",
+    "amazonwebservices.aws-toolkit-vscode",
+    "eamodio.gitlens",
+    "editorconfig.editorconfig",
+    "redhat.vscode-yaml"
+  ]
+}

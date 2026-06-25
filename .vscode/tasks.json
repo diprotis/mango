@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Backend: Test",
+      "type": "shell",
+      "command": "python3 -m pytest",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Lint (black + flake8)",
+      "type": "shell",
+      "command": "black --check . && flake8 .",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Synth (beta)",
+      "type": "shell",
+      "command": "npx --yes aws-cdk@2 synth -c stage=beta",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Bootstrap (diprotis-dev)",
+      "type": "shell",
+      "command": "npx --yes aws-cdk@2 bootstrap --profile diprotis-dev",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Deploy beta (diprotis-dev)",
+      "type": "shell",
+      "command": "npx --yes aws-cdk@2 deploy -c stage=beta --profile diprotis-dev --require-approval never --all",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "iOS: Test (simulator)",
+      "type": "shell",
+      "command": "xcodebuild test -project Mango.xcodeproj -scheme Mango -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO",
+      "options": { "cwd": "${workspaceFolder}/ios" },
+      "problemMatcher": []
+    },
+    {
+      "label": "iOS: Open in Xcode",
+      "type": "shell",
+      "command": "open Mango.xcodeproj",
+      "options": { "cwd": "${workspaceFolder}/ios" },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  // ---- Python (backend) ----
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["backend"],
+  "python.analysis.extraPaths": ["./backend/src"],
+  "python.analysis.autoImportCompletions": true,
+
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+  "black-formatter.args": ["--line-length=100"],
+  "flake8.args": ["--max-line-length=120", "--extend-ignore=E203,W503"],
+
+  // ---- Editor ----
+  "editor.rulers": [100],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // ---- Hide build noise ----
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "backend/cdk.out": true,
+    "ios/build": true,
+    "ios/DerivedData": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "backend/cdk.out": true,
+    "**/*.xcodeproj": true
+  },
+
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
+  }
+}
