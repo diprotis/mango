@@ -1,0 +1,212 @@
+openapi: 3.0.3
+info:
+  title: Mango API
+  version: 0.1.0
+  description: >
+    Contract between the Mango iOS app and the AWS backend. The backend is the
+    only component that holds the Anthropic API key; the app never calls Claude
+    directly in production. All authenticated routes expect a Cognito-issued
+    JWT in the Authorization header.
+servers:
+  - url: https://api.beta.mango.app
+    description: Beta
+  - url: https://api.mango.app
+    description: Prod
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  stage: { type: string, example: beta }
+  /v1/content/parse:
+    post:
+      summary: Fetch + parse source material into a normalized book
+      description: >
+        Accepts a URL, raw text, or a Project Gutenberg id. The backend fetches
+        and extracts readable text, stores it in S3, and returns book metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParseRequest" }
+      responses:
+        "200":
+          description: Parsed book
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParsedBook" }
+  /v1/roadmaps/generate:
+    post:
+      summary: Generate a gamified learning roadmap for a book (Claude-backed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoadmapRequest" }
+      responses:
+        "200":
+          description: A generated roadmap
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Roadmap" }
+  /v1/exercises/grade:
+    post:
+      summary: Grade a free-text or quiz answer and award XP (Claude-backed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradeRequest" }
+      responses:
+        "200":
+          description: Grade result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GradeResult" }
+  /v1/me/progress:
+    get:
+      summary: Fetch the caller's gamification progress
+      responses:
+        "200":
+          description: Progress
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Progress" }
+    put:
+      summary: Upsert the caller's gamification progress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Progress" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Progress" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ParseRequest:
+      type: object
+      required: [source]
+      properties:
+        source:
+          type: object
+          required: [type, value]
+          properties:
+            type: { type: string, enum: [url, text, gutenberg], example: url }
+            value: { type: string, example: "https://www.gutenberg.org/ebooks/1080" }
+            title: { type: string, nullable: true }
+            author: { type: string, nullable: true }
+    ParsedBook:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: string, nullable: true }
+        wordCount: { type: integer }
+        estimatedMinutes: { type: integer }
+        coverHue: { type: integer, description: "0-360 hue hint for a generated cover" }
+        excerpt: { type: string, description: "First ~400 chars for previews" }
+        contentRef: { type: string, description: "Opaque pointer to stored full text" }
+    Profile:
+      type: object
+      properties:
+        goals: { type: array, items: { type: string } }
+        interests: { type: array, items: { type: string } }
+        readingLevel: { type: string, enum: [casual, focused, deep] }
+        dailyGoalUnits: { type: integer, minimum: 1, maximum: 10 }
+    RoadmapRequest:
+      type: object
+      required: [profile]
+      description: Provide either an inline book (what the app sends) or a stored bookId.
+      properties:
+        bookId: { type: string, nullable: true }
+        book:
+          type: object
+          nullable: true
+          properties:
+            title: { type: string }
+            author: { type: string, nullable: true }
+            text: { type: string }
+        profile: { $ref: "#/components/schemas/Profile" }
+    Roadmap:
+      type: object
+      properties:
+        bookId: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        milestones:
+          type: array
+          items: { $ref: "#/components/schemas/Milestone" }
+    Milestone:
+      type: object
+      properties:
+        title: { type: string }
+        subtitle: { type: string }
+        lessons:
+          type: array
+          items: { $ref: "#/components/schemas/Lesson" }
+    Lesson:
+      type: object
+      properties:
+        title: { type: string }
+        readingSummary: { type: string }
+        estimatedMinutes: { type: integer }
+        exercises:
+          type: array
+          items: { $ref: "#/components/schemas/Exercise" }
+    Exercise:
+      type: object
+      properties:
+        kind: { type: string, enum: [quiz, reflection, application], example: reflection }
+        prompt: { type: string }
+        options:
+          type: array
+          nullable: true
+          items: { type: string }
+        answerIndex: { type: integer, nullable: true, description: "Correct index for quiz" }
+        xp: { type: integer, example: 20 }
+    GradeRequest:
+      type: object
+      required: [kind, prompt, answer]
+      properties:
+        kind: { type: string, enum: [quiz, reflection, application] }
+        prompt: { type: string }
+        answer: { type: string }
+        options: { type: array, nullable: true, items: { type: string } }
+        answerIndex: { type: integer, nullable: true }
+    GradeResult:
+      type: object
+      properties:
+        correct: { type: boolean, nullable: true }
+        score: { type: number, description: "0.0 - 1.0 quality score" }
+        feedback: { type: string }
+        xpAwarded: { type: integer }
+    Progress:
+      type: object
+      properties:
+        totalXP: { type: integer }
+        level: { type: integer }
+        currentStreak: { type: integer }
+        longestStreak: { type: integer }
+        freezesAvailable: { type: integer }
+        lastActiveDay: { type: string, format: date, nullable: true }
+        updatedAt: { type: string, format: date-time }

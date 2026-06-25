@@ -1,0 +1,49 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-synth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Format check (black)
+        run: black --check .
+
+      - name: Lint (flake8)
+        run: flake8 .
+
+      - name: Unit tests (pytest)
+        run: pytest -q
+
+      - name: CDK synth (beta + prod)
+        run: |
+          npx --yes aws-cdk@2 synth -c stage=beta >/dev/null
+          npx --yes aws-cdk@2 synth -c stage=prod >/dev/null

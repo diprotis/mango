@@ -1,0 +1,85 @@
+# ───────────────────────── macOS ─────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# ───────────────────────── Xcode / Swift ─────────────────────────
+## Build generated
+ios/build/
+ios/DerivedData/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+
+## Various settings
+xcuserdata/
+*.xccheckout
+*.moved-aside
+
+## Swift Package Manager
+ios/.build/
+ios/.swiftpm/
+Package.resolved
+
+## CocoaPods / Carthage (not used, but ignore defensively)
+Pods/
+Carthage/Build/
+
+## Fastlane
+ios/fastlane/report.xml
+ios/fastlane/screenshots/
+ios/fastlane/test_output/
+
+## Secrets / local config
+*.xcconfig.local
+ios/Mango/Resources/Secrets.plist
+
+# ───────────────────────── Python / Backend ─────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+downloads/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv/
+ENV/
+env/
+.python-version
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+
+# ───────────────────────── AWS CDK ─────────────────────────
+backend/cdk.out/
+cdk.out/
+.cdk.staging/
+cdk.context.json
+
+# ───────────────────────── Node (CDK toolchain / tooling) ─────────────────────────
+node_modules/
+
+# ───────────────────────── Secrets ─────────────────────────
+.env
+*.pem
+*.key
+secrets/
+.secrets/
+
+# ───────────────────────── Logs / IDE ─────────────────────────
+*.log
+logs/
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,55 @@
+name: Backend Deploy
+
+# Beta deploys on every push to main; Prod deploys when a GitHub Release is published.
+# Requires an OIDC deploy role ARN in the repo secret AWS_DEPLOY_ROLE_ARN
+# (no long-lived AWS keys). See docs/BACKEND.md.
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend-deploy.yml"]
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: backend-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'release' && 'prod' || 'beta' }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Deploy stage
+        run: |
+          STAGE=beta
+          if [ "${{ github.event_name }}" = "release" ]; then STAGE=prod; fi
+          echo "Deploying stage: $STAGE"
+          npx --yes aws-cdk@2 deploy -c stage=$STAGE --require-approval never --all

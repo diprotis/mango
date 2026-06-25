@@ -1,0 +1,6 @@
+{
+  "environment": "prod",
+  "stackNamePrefix": "Mango",
+  "region": "us-east-1",
+  "claudeModel": "claude-3-5-sonnet-latest"
+}

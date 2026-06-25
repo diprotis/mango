@@ -1,0 +1,60 @@
+# XcodeGen spec — the human-readable source of truth for the Xcode project.
+# A pre-generated Mango.xcodeproj is committed so you can open directly, but if it
+# ever drifts or won't open, run:  brew install xcodegen && cd ios && xcodegen generate
+name: Mango
+options:
+  bundleIdPrefix: app.mango
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+targets:
+  Mango:
+    type: application
+    platform: iOS
+    sources:
+      - path: Mango
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: app.mango.Mango
+        PRODUCT_NAME: Mango
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.1.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_PREVIEWS: "YES"
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_CFBundleDisplayName: Mango
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSUserNotificationsUsageDescription: "Mango sends one gentle daily reminder to keep your reading streak alive."
+  MangoTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: MangoTests
+    dependencies:
+      - target: Mango
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.mango.MangoTests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  Mango:
+    build:
+      targets:
+        Mango: all
+    test:
+      targets:
+        - MangoTests
