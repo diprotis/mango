@@ -35,10 +35,10 @@ make backend-bootstrap                       # PROFILE defaults to diprotis-dev
 # 2. Deploy the dev stage into your account
 make backend-deploy-personal                 # cdk deploy -c stage=dev --profile diprotis-dev
 
-# 3. Put the Anthropic key in the dev secret
-aws secretsmanager put-secret-value \
-  --secret-id mango/dev/anthropic-api-key \
-  --secret-string '{"apiKey":"sk-ant-..."}' --profile diprotis-dev
+# 3. Enable Bedrock model access (one-time per account/region)
+#    Bedrock console → Model access → enable your Claude model in us-east-1,
+#    then set "bedrockModelId" in backend/config/dev.json to that model (or
+#    inference-profile) id. No Anthropic API key / secret is needed for the backend.
 
 # 4. Get the API URL
 aws cloudformation describe-stacks --profile diprotis-dev \
@@ -69,8 +69,9 @@ not by hand. Manual deploy is the break-glass path.
 - Bootstrap each account/region (`cdk bootstrap`).
 - Create the GitHub OIDC deploy role (trust policy in [BACKEND.md](BACKEND.md)) and set
   its ARN as the `AWS_DEPLOY_ROLE_ARN` repo secret.
-- Put the Anthropic key in each stage's secret: `mango/beta/anthropic-api-key`,
-  `mango/prod/anthropic-api-key`.
+- Enable Bedrock model access for your Claude model in each stage's region (Bedrock
+  console → Model access) and set `bedrockModelId` in `config/beta.json` /
+  `config/prod.json`. The backend uses Bedrock via IAM — no Anthropic API key/secret.
 - Bake the resulting API URLs into `AppConfig.plist` (commit) **or** set the
   `BETA_API_URL` / `PROD_API_URL` repo secrets so `ios-release.yml` injects them.
 
@@ -133,7 +134,8 @@ Default to **Beta/Prod**; only use **Personal** when you say so.
 2. In the app: Settings → Backend → pick **Prod** (default real target) or **Beta**;
    or **Personal** and paste your `dev`-stage URL. Beta/Prod URLs come from
    AppConfig.plist, so unless you choose Personal you hit the shared stacks.
-3. Generate a roadmap / grade a reflection — these now call the live Lambda → Claude.
+3. Generate a roadmap / grade a reflection — these now call the live Lambda →
+   Claude on Amazon Bedrock (IAM auth; no API key).
 
 > **Auth note (current limitation, tracked as the Sign-up/Auth epic in
 > [ROADMAP.md](ROADMAP.md)):** `/v1/*` routes require a Cognito JWT, and the app does

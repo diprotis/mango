@@ -69,6 +69,21 @@ enum AppConfig {
     static var betaBaseURL: String { string("BetaAPIURL") }
     static var prodBaseURL: String { string("ProdAPIURL") }
 
+    // Cognito Hosted-UI / OAuth config (spec 0003). Empty until the user pool's
+    // domain + app client are deployed and registered; while empty, sign-in
+    // surfaces a friendly "not configured" error and the app stays offline-usable.
+
+    /// The Hosted UI domain, e.g. `mango-beta.auth.us-east-1.amazoncognito.com`
+    /// (host only — no scheme). The full base is built in `AuthService`.
+    static var cognitoDomain: String { string("CognitoDomain") }
+    /// The Cognito **app client id** (public client, no secret — PKCE).
+    static var cognitoClientId: String { string("CognitoClientId") }
+    /// The AWS region of the user pool, e.g. `us-east-1`.
+    static var cognitoRegion: String { string("CognitoRegion") }
+    /// The custom URL scheme registered for the OAuth redirect, e.g. `mango`.
+    /// The redirect URI becomes `<scheme>://callback`.
+    static var cognitoRedirectScheme: String { string("CognitoRedirectScheme") }
+
     private static let values: [String: Any] = {
         guard let url = Bundle.main.url(forResource: "AppConfig", withExtension: "plist"),
               let dict = NSDictionary(contentsOf: url) as? [String: Any]

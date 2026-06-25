@@ -25,7 +25,8 @@ reality changes — a stale spec is a bug.
 |---|---|---|---|
 | 0001 | [Environments & deployment](0001-environments-and-deploy.md) | M1 | Approved (impl 🔶) |
 | 0002 | [Claude-consistent UI theme](0002-claude-ui-theme.md) | M2 | In progress (impl ✅) |
-| 0003 | [Authentication (Cognito + app)](0003-authentication.md) | M3 | Approved — Hosted UI |
-| 0004 | [Data model + S3 data lake](0004-data-model-and-lake.md) | M4 | Draft |
+| 0003 | [Authentication (Cognito + app)](0003-authentication.md) | M3 | In progress (app side ✅; backend OAuth config + delete pending) |
+| 0004 | [Data model + S3 data lake](0004-data-model-and-lake.md) | M4 | In progress (handlers + routes ✅; analytics lake pending) |
+| 0005 | [Bedrock AI provider](0005-bedrock-ai-provider.md) | AI | In progress (impl ✅) |
 
 See [../ROADMAP.md](../ROADMAP.md) for the full backlog and sequencing.

@@ -4,6 +4,7 @@ from aws_cdk import CfnOutput, Duration, Stack
 from aws_cdk import aws_apigatewayv2 as apigw
 from aws_cdk import aws_apigatewayv2_authorizers as authorizers
 from aws_cdk import aws_apigatewayv2_integrations as integrations
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as _lambda
 from constructs import Construct
 
@@ -23,13 +24,19 @@ class ApiStack(Stack):
         **kwargs,
     ):
         super().__init__(scope, construct_id, **kwargs)
+        # ``anthropic_secret`` is kept in the signature for compatibility with
+        # MangoStage but is no longer used: backend AI now runs on Bedrock (IAM).
+        del anthropic_secret
         stage = config["environment"]
 
         common_env = {
             "TABLE_NAME": table.table_name,
             "BUCKET_NAME": bucket.bucket_name,
-            "ANTHROPIC_SECRET_ARN": anthropic_secret.secret_arn,
-            "CLAUDE_MODEL": config.get("claudeModel", "claude-3-5-sonnet-latest"),
+            "BEDROCK_MODEL_ID": config.get(
+                "bedrockModelId", "anthropic.claude-3-5-sonnet-20240620-v1:0"
+            ),
+            "BEDROCK_REGION": config.get("bedrockRegion", ""),
+            "AI_MAX_EFFORT": str(config.get("aiMaxEffort", True)).lower(),
             "STAGE": stage,
         }
 
@@ -54,14 +61,37 @@ class ApiStack(Stack):
         )
         grade_fn = make_fn("GradeFn", "handlers.grade_exercise.handler", timeout=60, memory=384)
         progress_fn = make_fn("ProgressFn", "handlers.progress.handler", timeout=15)
+        profile_fn = make_fn("ProfileFn", "handlers.profile.handler", timeout=15)
+        library_fn = make_fn("LibraryFn", "handlers.library.handler", timeout=15)
+        reflections_fn = make_fn("ReflectionsFn", "handlers.reflections.handler", timeout=15)
+        delete_fn = make_fn("DeleteAccountFn", "handlers.delete_account.handler", timeout=30)
 
         # Least-privilege grants (grade_fn never touches the table)
-        for fn in (parse_fn, roadmap_fn, progress_fn):
+        for fn in (
+            parse_fn,
+            roadmap_fn,
+            progress_fn,
+            profile_fn,
+            library_fn,
+            reflections_fn,
+            delete_fn,
+        ):
             table.grant_read_write_data(fn)
         bucket.grant_read_write(parse_fn)
         bucket.grant_read(roadmap_fn)
-        anthropic_secret.grant_read(roadmap_fn)
-        anthropic_secret.grant_read(grade_fn)
+        bucket.grant_read_write(delete_fn)  # enumerates + deletes users/<sub>/ objects
+
+        # Backend AI runs on Amazon Bedrock (IAM auth, no API key). Only the
+        # generate/grade Lambdas may invoke models.
+        bedrock_policy = iam.PolicyStatement(
+            actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+            resources=[
+                "arn:aws:bedrock:*::foundation-model/*",
+                "arn:aws:bedrock:*:*:inference-profile/*",
+            ],
+        )
+        roadmap_fn.add_to_role_policy(bedrock_policy)
+        grade_fn.add_to_role_policy(bedrock_policy)
 
         authorizer = authorizers.HttpUserPoolAuthorizer(
             "JwtAuthorizer", user_pool, user_pool_clients=[user_pool_client]
@@ -82,7 +112,9 @@ class ApiStack(Stack):
             http_api.add_routes(
                 path=path,
                 methods=[method],
-                integration=integrations.HttpLambdaIntegration(f"{fn.node.id}Integ", fn),
+                integration=integrations.HttpLambdaIntegration(
+                    f"{fn.node.id}{method.value}Integ", fn
+                ),
                 authorizer=authorizer if secured else None,
             )
 
@@ -92,5 +124,13 @@ class ApiStack(Stack):
         route("/v1/exercises/grade", apigw.HttpMethod.POST, grade_fn)
         route("/v1/me/progress", apigw.HttpMethod.GET, progress_fn)
         route("/v1/me/progress", apigw.HttpMethod.PUT, progress_fn)
+        route("/v1/me/profile", apigw.HttpMethod.GET, profile_fn)
+        route("/v1/me/profile", apigw.HttpMethod.PUT, profile_fn)
+        route("/v1/me/library", apigw.HttpMethod.GET, library_fn)
+        route("/v1/me/library", apigw.HttpMethod.POST, library_fn)
+        route("/v1/me/library/{bookId}", apigw.HttpMethod.DELETE, library_fn)
+        route("/v1/reflections", apigw.HttpMethod.GET, reflections_fn)
+        route("/v1/reflections", apigw.HttpMethod.POST, reflections_fn)
+        route("/v1/me", apigw.HttpMethod.DELETE, delete_fn)
 
         CfnOutput(self, "ApiUrl", value=http_api.api_endpoint)

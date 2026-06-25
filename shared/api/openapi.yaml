@@ -133,6 +133,19 @@ components:
         interests: { type: array, items: { type: string } }
         readingLevel: { type: string, enum: [casual, focused, deep] }
         dailyGoalUnits: { type: integer, minimum: 1, maximum: 10 }
+        name: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+    LibraryItem:
+      type: object
+      properties:
+        bookId: { type: string }
+        addedAt: { type: string, format: date-time }
+    Reflection:
+      type: object
+      properties:
+        createdAt: { type: string, format: date-time }
+        text: { type: string }
+        chapterRef: { type: string, nullable: true }
     RoadmapRequest:
       type: object
       required: [profile]

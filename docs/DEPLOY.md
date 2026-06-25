@@ -21,8 +21,9 @@ aws sts get-caller-identity --profile diprotis-dev
 cd backend && pip install -r requirements.txt
 make backend-bootstrap                 # one-time per account/region
 make backend-deploy-personal           # cdk deploy -c stage=dev --profile diprotis-dev
-aws secretsmanager put-secret-value --secret-id mango/dev/anthropic-api-key \
-  --secret-string '{"apiKey":"sk-ant-..."}' --profile diprotis-dev
+# Enable Bedrock model access (Bedrock console → Model access) for your Claude
+# model in us-east-1, then set "bedrockModelId" in backend/config/dev.json.
+# The backend calls Bedrock via IAM — no Anthropic API key/secret required.
 aws cloudformation describe-stacks --profile diprotis-dev \
   --query "Stacks[?contains(StackName,'Mango-dev')].Outputs[]" --output table
 curl https://<ApiUrl>/health           # {"status":"ok","stage":"dev"}
@@ -40,8 +41,10 @@ make backend-deploy-beta  PROFILE=<beta-profile>
 make backend-deploy-prod  PROFILE=<prod-profile>
 ```
 
-Set each stage's secret (`mango/beta|prod/anthropic-api-key`) and bake the API URLs
-into `ios/Mango/Resources/AppConfig.plist` (or via the `BETA_API_URL` / `PROD_API_URL`
+Enable Bedrock model access for your Claude model in each stage's region and set
+`bedrockModelId` in `config/beta.json` / `config/prod.json` (the backend uses Bedrock
+via IAM — no Anthropic key/secret). Then bake the API URLs into
+`ios/Mango/Resources/AppConfig.plist` (or via the `BETA_API_URL` / `PROD_API_URL`
 CI secrets). See [OPERATIONS.md](OPERATIONS.md) SOP 2–3 and [BACKEND.md](BACKEND.md)
 for the GitHub OIDC deploy role.
 

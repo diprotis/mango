@@ -10,11 +10,8 @@ BUCKET = "mango-test-bucket"
 def _env(monkeypatch):
     monkeypatch.setenv("TABLE_NAME", TABLE)
     monkeypatch.setenv("BUCKET_NAME", BUCKET)
-    monkeypatch.setenv(
-        "ANTHROPIC_SECRET_ARN",
-        "arn:aws:secretsmanager:us-east-1:000000000000:secret:mango-test",
-    )
-    monkeypatch.setenv("CLAUDE_MODEL", "claude-3-5-sonnet-latest")
+    monkeypatch.setenv("BEDROCK_MODEL_ID", "anthropic.claude-test")
+    monkeypatch.setenv("AI_MAX_EFFORT", "false")
     monkeypatch.setenv("STAGE", "test")
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")

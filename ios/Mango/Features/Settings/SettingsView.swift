@@ -15,6 +15,18 @@ struct SettingsView: View {
         @Bindable var settings = app.settings
         NavigationStack {
             Form {
+                Section("Account") {
+                    NavigationLink {
+                        AccountView()
+                    } label: {
+                        if app.auth.isSignedIn {
+                            LabeledContent("Account", value: app.auth.session?.email ?? "Signed in")
+                        } else {
+                            Text("Sign in / Create account")
+                        }
+                    }
+                }
+
                 Section("Backend") {
                     Picker("Environment", selection: $settings.apiEnvironment) {
                         ForEach(APIEnvironment.allCases) { Text($0.title).tag($0) }

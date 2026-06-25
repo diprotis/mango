@@ -8,5 +8,19 @@
 	<string></string>
 	<key>ProdAPIURL</key>
 	<string></string>
+
+	<!-- Cognito Hosted-UI / OAuth config (spec 0003). Fill these after deploying
+	     the user pool domain + app client. Leave empty to keep sign-in disabled
+	     (the app still works fully offline). The redirect URI is
+	     <CognitoRedirectScheme>://callback and the scheme must also be registered
+	     as a URL Type in the app target's Info settings. -->
+	<key>CognitoDomain</key>
+	<string></string>
+	<key>CognitoClientId</key>
+	<string></string>
+	<key>CognitoRegion</key>
+	<string></string>
+	<key>CognitoRedirectScheme</key>
+	<string></string>
 </dict>
 </plist>

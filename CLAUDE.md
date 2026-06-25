@@ -68,9 +68,9 @@ single table (`PK`/`SK`, e.g. `BOOK#<id>/META`, `USER#<id>/PROGRESS`) plus `GSI1
 
 ## Invariants — do not break these
 
-- **The Anthropic API key is server-side only** (Secrets Manager) in the production
-  path. Never ship it in the app. `DirectClaudeAIService` (on-device key in Keychain)
-  is a local-testing convenience, not the production path.
+- **Backend AI calls go through Amazon Bedrock** (IAM auth, no API key). The Secrets
+  Manager Anthropic key is optional/only for the on-device Direct-Claude testing path
+  (`DirectClaudeAIService`, key in Keychain) — never ship a key in the app.
 - **The app must run fully offline** on first launch: `MockAIService` + the bundled
   public-domain sample book. Don't make onboarding or the first lesson depend on a
   network call or a key.
