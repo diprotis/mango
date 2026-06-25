@@ -33,6 +33,9 @@ jobs:
             echo "SwiftLint not installed on runner; skipping."
           fi
 
+      - name: Theme token audit
+        run: bash scripts/check_theme.sh
+
       - name: Build & test
         run: |
           set -o pipefail

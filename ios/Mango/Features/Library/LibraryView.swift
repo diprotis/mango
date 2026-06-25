@@ -64,14 +64,14 @@ private struct LibraryCard: View {
                 .overlay(alignment: .topLeading) {
                     Text(book.title)
                         .font(.system(size: 15, weight: .bold, design: .serif))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Palette.onAccent)
                         .lineLimit(4)
                         .padding(12)
                 }
                 .overlay(alignment: .bottomTrailing) {
                     if book.isActive {
                         Image(systemName: "bookmark.fill")
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Palette.onAccent)
                             .padding(8)
                     }
                 }

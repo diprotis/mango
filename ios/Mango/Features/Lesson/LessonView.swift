@@ -4,6 +4,7 @@ import SwiftUI
 struct LessonView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var profiles: [UserProfile]
     let lesson: Lesson
 
@@ -82,7 +83,7 @@ struct LessonView: View {
                 .foregroundStyle(Palette.accent)
                 .scaleEffect(celebrate ? 1 : 0.5)
                 .opacity(celebrate ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.6), value: celebrate)
+                .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.6), value: celebrate)
 
             Text("Lesson complete!").font(Typo.title).foregroundStyle(Palette.textPrimary)
             Text("+\(totalXP) XP").font(.title3.weight(.bold)).foregroundStyle(Palette.xp)

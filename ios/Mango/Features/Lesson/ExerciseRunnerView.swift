@@ -36,7 +36,7 @@ struct ExerciseRunnerView: View {
                     submit()
                 } label: {
                     if grading {
-                        HStack { ProgressView().tint(.white); Text("Checking…") }
+                        HStack { ProgressView().tint(Palette.onAccent); Text("Checking…") }
                     } else {
                         Text(exercise.kind == .quiz ? "Check answer" : "Submit")
                     }

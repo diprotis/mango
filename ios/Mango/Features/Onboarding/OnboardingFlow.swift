@@ -194,7 +194,7 @@ struct OnboardingFlow: View {
                 } label: {
                     Text(option)
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(isOn ? .white : Palette.textPrimary)
+                        .foregroundStyle(isOn ? Palette.onAccent : Palette.textPrimary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(isOn ? Palette.accent : Palette.surface)

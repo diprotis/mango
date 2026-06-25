@@ -7,16 +7,18 @@ struct MangoPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundStyle(.white)
+            .foregroundStyle(Palette.onAccent)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 15)
-            .background(
-                (enabled ? Palette.accent : Palette.textTertiary)
-                    .opacity(configuration.isPressed ? 0.85 : 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(background(isPressed: configuration.isPressed))
+            .clipShape(RoundedRectangle(cornerRadius: Metrics.radiusButton, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+
+    private func background(isPressed: Bool) -> Color {
+        guard enabled else { return Palette.textTertiary }
+        return isPressed ? Palette.accentPressed : Palette.accent
     }
 }
 
@@ -28,9 +30,9 @@ struct MangoSecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 15)
             .background(Palette.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Metrics.radiusButton, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: Metrics.radiusButton, style: .continuous)
                     .strokeBorder(Palette.border, lineWidth: 1)
             )
             .opacity(configuration.isPressed ? 0.7 : 1)
@@ -100,6 +102,8 @@ struct ProgressRing: View {
     var lineWidth: CGFloat = 9
     var tint: Color = Palette.accent
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         ZStack {
             Circle().stroke(Palette.surfaceAlt, lineWidth: lineWidth)
@@ -107,7 +111,7 @@ struct ProgressRing: View {
                 .trim(from: 0, to: max(0.0001, min(1, progress)))
                 .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 0.5, dampingFraction: 0.85), value: progress)
+                .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.85), value: progress)
         }
         .frame(width: size, height: size)
     }
@@ -121,6 +125,8 @@ struct XPBar: View {
     var tint: Color = Palette.xp
     var height: CGFloat = 10
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var fraction: CGFloat {
         guard goal > 0 else { return 0 }
         return CGFloat(min(value, goal)) / CGFloat(goal)
@@ -131,7 +137,7 @@ struct XPBar: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(Palette.surfaceAlt)
                 Capsule().fill(tint).frame(width: geo.size.width * fraction)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: fraction)
+                    .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.8), value: fraction)
             }
         }
         .frame(height: height)
@@ -215,7 +221,7 @@ struct BookCover: View {
     private var base: Color { Color(hue: hue / 360, saturation: 0.45, brightness: 0.7) }
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
+        RoundedRectangle(cornerRadius: Metrics.radiusXS, style: .continuous)
             .fill(
                 LinearGradient(
                     colors: [base, base.opacity(0.78)],
@@ -225,15 +231,15 @@ struct BookCover: View {
             .overlay(alignment: .topLeading) {
                 Text(title)
                     .font(.system(size: 9, weight: .bold, design: .serif))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .foregroundStyle(Palette.onAccent.opacity(0.95))
                     .lineLimit(3)
                     .padding(7)
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                RoundedRectangle(cornerRadius: Metrics.radiusXS, style: .continuous)
+                    .strokeBorder(Palette.onAccent.opacity(0.15), lineWidth: 1)
             )
             .frame(width: width, height: height)
-            .shadow(color: .black.opacity(0.12), radius: 5, x: 0, y: 3)
+            .shadow(color: Palette.shadow, radius: 5, x: 0, y: 3)
     }
 }

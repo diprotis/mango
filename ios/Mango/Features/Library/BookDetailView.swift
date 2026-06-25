@@ -81,7 +81,7 @@ struct BookDetailView: View {
                 generate()
             } label: {
                 if isGenerating {
-                    HStack { ProgressView().tint(.white); Text("Designing your journey…") }
+                    HStack { ProgressView().tint(Palette.onAccent); Text("Designing your journey…") }
                 } else {
                     Label("Build my journey", systemImage: "wand.and.stars")
                 }

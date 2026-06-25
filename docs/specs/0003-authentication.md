@@ -1,6 +1,6 @@
 # 0003 — Authentication (Cognito + app)
 
-- **Epic:** M3 · **Status:** Draft (decision open) · **Updated:** 2026-06-25
+- **Epic:** M3 · **Status:** Approved · **Decision:** Option A — Cognito Hosted UI + ASWebAuthenticationSession · **Updated:** 2026-06-25
 
 ## 1. Summary
 Users sign up / sign in; the app obtains a Cognito JWT and sends it on `/v1/*` so

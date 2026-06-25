@@ -46,7 +46,7 @@ struct AddBookView: View {
 
                     Button { start() } label: {
                         if let working {
-                            HStack { ProgressView().tint(.white); Text(working) }
+                            HStack { ProgressView().tint(Palette.onAccent); Text(working) }
                         } else {
                             Label("Add & build journey", systemImage: "wand.and.stars")
                         }

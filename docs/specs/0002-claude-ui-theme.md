@@ -1,6 +1,6 @@
 # 0002 — Claude-consistent UI theme
 
-- **Epic:** M2 · **Status:** Draft · **Updated:** 2026-06-25
+- **Epic:** M2 · **Status:** In progress (tokens/components/motion/docs ✅; on-device design review pending) · **Updated:** 2026-06-25
 
 ## 1. Summary
 Refine Mango's visual language so it reads unmistakably "Claude": warm cream

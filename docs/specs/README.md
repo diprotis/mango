@@ -24,8 +24,8 @@ reality changes — a stale spec is a bug.
 | # | Spec | Epic | Status |
 |---|---|---|---|
 | 0001 | [Environments & deployment](0001-environments-and-deploy.md) | M1 | Approved (impl 🔶) |
-| 0002 | [Claude-consistent UI theme](0002-claude-ui-theme.md) | M2 | Draft |
-| 0003 | [Authentication (Cognito + app)](0003-authentication.md) | M3 | Draft (decision open) |
+| 0002 | [Claude-consistent UI theme](0002-claude-ui-theme.md) | M2 | In progress (impl ✅) |
+| 0003 | [Authentication (Cognito + app)](0003-authentication.md) | M3 | Approved — Hosted UI |
 | 0004 | [Data model + S3 data lake](0004-data-model-and-lake.md) | M4 | Draft |
 
 See [../ROADMAP.md](../ROADMAP.md) for the full backlog and sequencing.
