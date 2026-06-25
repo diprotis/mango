@@ -52,6 +52,10 @@ fall back to an on-device generator (`MockAIService`). To turn on real AI:
 
 Run the unit tests: **⌘U**, or `make ios-test`.
 
+**▶ Testing on a physical iPhone?** Follow the step-by-step guide in
+**[docs/RUN_ON_IPHONE.md](docs/RUN_ON_IPHONE.md)** (signing, trusting the developer
+profile, wireless runs, troubleshooting).
+
 ---
 
 ## Quick start — AWS backend
@@ -80,8 +84,9 @@ aws secretsmanager put-secret-value \
   --secret-string '{"apiKey":"sk-ant-..."}'
 ```
 
-See **[docs/BACKEND.md](docs/BACKEND.md)** for the architecture, the API surface,
-and the GitHub OIDC deploy role.
+See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the full `diprotis-dev` deploy runbook
+(bootstrap → deploy → set secret → verify) and **[docs/BACKEND.md](docs/BACKEND.md)**
+for the architecture, API surface, and GitHub OIDC deploy role.
 
 ---
 
@@ -129,4 +134,4 @@ sign-in so the app can use the deployed backend, social leagues, spaced-repetiti
 > can align naming/feature parity with it.
 
 ## Docs
-- [Architecture](docs/ARCHITECTURE.md) · [Backend](docs/BACKEND.md) · [Design system](docs/DESIGN_SYSTEM.md) · [Gamification](docs/GAMIFICATION.md) · [Product roadmap](docs/PRODUCT_ROADMAP.md)
+- [Run on iPhone](docs/RUN_ON_IPHONE.md) · [Deploy (diprotis-dev)](docs/DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) · [Backend](docs/BACKEND.md) · [Design system](docs/DESIGN_SYSTEM.md) · [Gamification](docs/GAMIFICATION.md) · [Product roadmap](docs/PRODUCT_ROADMAP.md)
