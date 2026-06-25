@@ -1,0 +1,12 @@
+# Normalize line endings
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.pdf binary
+
+# Xcode files
+*.pbxproj text eol=lf
+*.xcscheme text eol=lf
+*.xcassets text eol=lf

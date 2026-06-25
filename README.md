@@ -98,17 +98,15 @@ trusts GitHub's OIDC provider). Details in `docs/BACKEND.md`.
 
 ---
 
-## First-time git setup (one-time)
+## Push to GitHub
 
-The folder isn't a git repo yet. On your Mac:
+The repo is live at **https://github.com/diprotis/mango** — `main` is at the v0.1
+commit. To push further changes, from your Mac (where your GitHub credentials live):
 
 ```bash
 cd ~/Documents/Claude/Projects/mango
-git init -b main
-git add .
-git commit -m "Mango v0.1 — iOS app + AWS backend monorepo"
-git remote add origin https://github.com/diprotis/mango.git
-git push -u origin main
+git add -A && git commit -m "your message"
+git push            # main tracks origin/main
 ```
 
 ---
