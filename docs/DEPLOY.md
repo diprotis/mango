@@ -1,74 +1,52 @@
-# Deploying the Mango backend — AWS profile `diprotis-dev`
+# Backend deploy — command reference
 
-> Run these on your Mac (any machine with the `diprotis-dev` AWS profile configured).
-> The Cowork sandbox has **no AWS credentials**, so the deploy can't be executed from
-> chat — but every command below is ready to paste.
+Full procedures, testing, and CI/CD live in **[OPERATIONS.md](OPERATIONS.md)**. This is
+the quick command card for the three tiers. The Cowork sandbox has no AWS
+credentials — run these on a machine with the right profile.
 
-## Prerequisites
-- **AWS CLI v2** with a `diprotis-dev` profile. Verify it resolves:
-  ```bash
-  aws sts get-caller-identity --profile diprotis-dev
-  ```
-- **Node 20+** and **Python 3.12**.
-- Install backend deps once:
-  ```bash
-  cd backend
-  python3 -m pip install -r requirements.txt
-  ```
+## Tiers
 
-All `make` targets below default to `PROFILE=diprotis-dev` (override with `PROFILE=...`).
+| Tier | Stage | Where | Command |
+|---|---|---|---|
+| Personal | `dev` | your account (`diprotis-dev`) | `make backend-deploy-personal` |
+| Beta | `beta` | shared (CI on push to `main`) | `make backend-deploy-beta` |
+| Prod | `prod` | shared (CI on Release) | `make backend-deploy-prod` |
 
-## 1. One‑time CDK bootstrap (per account + region)
+`make` targets default to `PROFILE=diprotis-dev` (override with `PROFILE=...`).
+
+## Personal (dev) on your own AWS
+
 ```bash
-make backend-bootstrap
-# equivalently:
-cd backend && npx aws-cdk@2 bootstrap --profile diprotis-dev
-```
-
-## 2. Deploy the Beta stage
-```bash
-make backend-deploy-beta
-# equivalently:
-cd backend && npx aws-cdk@2 deploy -c stage=beta --profile diprotis-dev --require-approval never --all
-```
-Creates the `Mango-beta` stage: **Data** (DynamoDB single‑table + S3), **Auth** (Cognito
-user pool), **Ai** (Secrets Manager), **Api** (HTTP API + 5 Lambdas, least‑privilege IAM).
-
-## 3. Set the Anthropic API key (server‑side secret)
-The stack creates an empty secret; put the real key in:
-```bash
-aws secretsmanager put-secret-value \
-  --secret-id mango/beta/anthropic-api-key \
-  --secret-string '{"apiKey":"sk-ant-..."}' \
-  --profile diprotis-dev
-```
-
-## 4. Read the stack outputs (API URL + Cognito ids)
-`cdk deploy` prints them; to fetch again:
-```bash
+aws sts get-caller-identity --profile diprotis-dev
+cd backend && pip install -r requirements.txt
+make backend-bootstrap                 # one-time per account/region
+make backend-deploy-personal           # cdk deploy -c stage=dev --profile diprotis-dev
+aws secretsmanager put-secret-value --secret-id mango/dev/anthropic-api-key \
+  --secret-string '{"apiKey":"sk-ant-..."}' --profile diprotis-dev
 aws cloudformation describe-stacks --profile diprotis-dev \
-  --query "Stacks[?contains(StackName,'Mango-beta')].Outputs[]" --output table
+  --query "Stacks[?contains(StackName,'Mango-dev')].Outputs[]" --output table
+curl https://<ApiUrl>/health           # {"status":"ok","stage":"dev"}
 ```
-Note `ApiUrl`, `UserPoolId`, `UserPoolClientId`.
 
-## 5. Verify it's live
+Point the app at it: **Settings → Backend → Personal → `<ApiUrl>`**.
+
+## Beta / Prod
+
+Normally deployed by CI (push to `main` → beta; publish a Release → prod). Manual
+break-glass:
+
 ```bash
-curl https://<ApiUrl>/health        # → {"status":"ok","stage":"beta"}
+make backend-deploy-beta  PROFILE=<beta-profile>
+make backend-deploy-prod  PROFILE=<prod-profile>
 ```
-`/health` is public; `/v1/*` routes require a Cognito JWT.
 
-## 6. Point the app at it (later)
-App → Settings → **AI engine → Mango Backend** → paste the API URL. Backend mode needs
-Cognito sign‑in (not built yet — see [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md)); until then
-the deploy is validated via `/health` and exercised by CI.
+Set each stage's secret (`mango/beta|prod/anthropic-api-key`) and bake the API URLs
+into `ios/Mango/Resources/AppConfig.plist` (or via the `BETA_API_URL` / `PROD_API_URL`
+CI secrets). See [OPERATIONS.md](OPERATIONS.md) SOP 2–3 and [BACKEND.md](BACKEND.md)
+for the GitHub OIDC deploy role.
 
-## Prod
-Same commands with `-c stage=prod` (RETAIN removal policies, point‑in‑time recovery,
-S3 versioning). CI (`.github/workflows/backend-deploy.yml`) deploys **Beta on push to
-`main`** and **Prod on a published Release** via GitHub OIDC — see [BACKEND.md](BACKEND.md)
-for the deploy‑role trust policy.
+## Teardown (dev / beta only; prod is RETAIN)
 
-## Teardown (beta only; prod is RETAIN)
 ```bash
-cd backend && npx aws-cdk@2 destroy -c stage=beta --profile diprotis-dev --all
+cd backend && npx aws-cdk@2 destroy -c stage=dev --profile diprotis-dev --all
 ```

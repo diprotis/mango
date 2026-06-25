@@ -97,6 +97,7 @@ for the architecture, API surface, and GitHub OIDC deploy role.
 | `ios-ci.yml` | push/PR touching `ios/**` | `xcodebuild` build + unit tests on a macOS runner |
 | `backend-ci.yml` | push/PR touching `backend/**` | black + flake8 + pytest + `cdk synth` (beta & prod) |
 | `backend-deploy.yml` | push to `main` → **Beta**; published Release → **Prod** | `cdk deploy` via GitHub OIDC (no static AWS keys) |
+| `ios-release.yml` | published Release / manual | archive + upload to **TestFlight** (secrets-gated, safely skips without Apple secrets) |
 
 The deploy workflow needs one repo secret, `AWS_DEPLOY_ROLE_ARN` (an IAM role that
 trusts GitHub's OIDC provider). Details in `docs/BACKEND.md`.
@@ -134,4 +135,4 @@ sign-in so the app can use the deployed backend, social leagues, spaced-repetiti
 > can align naming/feature parity with it.
 
 ## Docs
-- [Run on iPhone](docs/RUN_ON_IPHONE.md) · [Deploy (diprotis-dev)](docs/DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) · [Backend](docs/BACKEND.md) · [Design system](docs/DESIGN_SYSTEM.md) · [Gamification](docs/GAMIFICATION.md) · [Product roadmap](docs/PRODUCT_ROADMAP.md)
+- **[Operations & SOPs](docs/OPERATIONS.md)** · **[Roadmap / backlog](docs/ROADMAP.md)** · [Run on iPhone](docs/RUN_ON_IPHONE.md) · [Deploy](docs/DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) · [Backend](docs/BACKEND.md) · [Design system](docs/DESIGN_SYSTEM.md) · [Gamification](docs/GAMIFICATION.md) · [Product roadmap](docs/PRODUCT_ROADMAP.md)

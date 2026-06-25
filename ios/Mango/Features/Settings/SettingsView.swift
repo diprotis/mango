@@ -15,27 +15,40 @@ struct SettingsView: View {
         @Bindable var settings = app.settings
         NavigationStack {
             Form {
-                Section("AI engine") {
-                    Picker("Mode", selection: $settings.aiMode) {
-                        ForEach(AIMode.allCases) { Text($0.title).tag($0) }
+                Section("Backend") {
+                    Picker("Environment", selection: $settings.apiEnvironment) {
+                        ForEach(APIEnvironment.allCases) { Text($0.title).tag($0) }
                     }
-                    Text(settings.aiMode.detail)
+                    Text(settings.apiEnvironment.detail)
                         .font(.caption).foregroundStyle(Palette.textSecondary)
 
-                    if settings.aiMode == .backend || settings.aiMode == .auto {
-                        TextField("Backend base URL", text: $settings.backendBaseURL)
+                    if settings.apiEnvironment == .personal {
+                        TextField("Personal API URL (https://…)", text: $settings.personalBaseURL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.URL)
+                    } else if settings.apiEnvironment.isReal {
+                        LabeledContent("URL", value: settings.displayBackendURL.isEmpty ? "not set" : settings.displayBackendURL)
+                            .font(.caption)
                     }
 
-                    if settings.aiMode == .directClaude || settings.aiMode == .auto {
-                        SecureField("Anthropic API key (sk-ant-…)", text: $apiKey)
-                        Button("Save key") { saveKey() }
-                        if !keyStatus.isEmpty {
-                            Text(keyStatus).font(.caption).foregroundStyle(Palette.success)
-                        }
+                    if settings.apiEnvironment.isReal && settings.effectiveBackendURL == nil {
+                        Text("No URL for this environment yet. Set BetaAPIURL / ProdAPIURL in AppConfig.plist (or via CI), or use Personal with your own URL.")
+                            .font(.caption).foregroundStyle(Palette.warning)
                     }
+                }
+
+                Section {
+                    SecureField("Anthropic API key (sk-ant-…)", text: $apiKey)
+                    Button("Save key") { saveKey() }
+                    if !keyStatus.isEmpty {
+                        Text(keyStatus).font(.caption).foregroundStyle(Palette.success)
+                    }
+                    Toggle("Use this key when Offline", isOn: $settings.useDirectClaudeWhenOffline)
+                } header: {
+                    Text("On-device Claude key")
+                } footer: {
+                    Text("When the environment is Offline and a key is saved, roadmaps and grading call Claude directly from this device (testing only — the key never leaves the Keychain).")
                 }
 
                 Section("Appearance") {
@@ -70,8 +83,9 @@ struct SettingsView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
             .onAppear { apiKey = Keychain.read(.anthropicKey) ?? "" }
-            .onChange(of: settings.aiMode) { app.reloadAIService() }
-            .onChange(of: settings.backendBaseURL) { app.reloadAIService() }
+            .onChange(of: settings.apiEnvironment) { app.reloadAIService() }
+            .onChange(of: settings.personalBaseURL) { app.reloadAIService() }
+            .onChange(of: settings.useDirectClaudeWhenOffline) { app.reloadAIService() }
             .onChange(of: settings.reminderEnabled) { _, enabled in toggleReminder(enabled) }
             .confirmationDialog("Erase your library?", isPresented: $showEraseConfirm, titleVisibility: .visible) {
                 Button("Erase everything", role: .destructive) { eraseLibrary() }

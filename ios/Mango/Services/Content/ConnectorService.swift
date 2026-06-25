@@ -25,7 +25,7 @@ final class ConnectorService {
     private let backendBaseURL: String?
 
     init(settings: AppSettings) {
-        self.backendBaseURL = settings.hasBackend ? settings.backendBaseURL : nil
+        self.backendBaseURL = settings.effectiveBackendURL?.absoluteString
     }
 
     // MARK: Web URL

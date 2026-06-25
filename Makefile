@@ -7,7 +7,8 @@
 PROFILE ?= diprotis-dev
 
 .PHONY: help bootstrap backend-install backend-test backend-lint backend-synth \
-        backend-bootstrap backend-deploy-beta backend-deploy-prod ios-open ios-test ios-lint clean
+        backend-bootstrap backend-deploy-personal backend-deploy-beta backend-deploy-prod \
+        ios-open ios-test ios-lint clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -31,6 +32,9 @@ backend-synth: ## Synthesize CloudFormation for the beta stage
 
 backend-bootstrap: ## One-time CDK bootstrap for the target account/region
 	cd backend && npx --yes aws-cdk@2 bootstrap --profile $(PROFILE)
+
+backend-deploy-personal: ## Deploy the dev stage to your personal AWS (PROFILE=diprotis-dev)
+	cd backend && npx --yes aws-cdk@2 deploy -c stage=dev --profile $(PROFILE) --require-approval never --all
 
 backend-deploy-beta: ## Deploy the Beta stage (PROFILE=diprotis-dev by default)
 	cd backend && npx --yes aws-cdk@2 deploy -c stage=beta --profile $(PROFILE) --require-approval never --all

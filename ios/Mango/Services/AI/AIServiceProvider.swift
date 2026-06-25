@@ -1,32 +1,25 @@
 import Foundation
 
-/// Resolves the active AIService from settings + stored secrets.
+/// Resolves the active AIService from the selected environment + stored secrets.
+///
+/// Precedence: a configured real backend (personal/beta/prod) → an on-device
+/// Claude key when offline-and-enabled → the offline mock.
 enum AIServiceProvider {
     static func make(settings: AppSettings) -> AIService {
-        switch settings.aiMode {
-        case .mock:
-            return MockAIService()
-        case .backend:
-            return backend(settings) ?? MockAIService()
-        case .directClaude:
-            return direct() ?? MockAIService()
-        case .auto:
-            return backend(settings) ?? direct() ?? MockAIService()
+        if settings.isRealBackend, let url = settings.effectiveBackendURL {
+            let client = APIClient(
+                baseURL: url,
+                deviceUserId: settings.deviceUserId,
+                authToken: Keychain.read(.authToken)
+            )
+            return RemoteAIService(client: client)
         }
-    }
 
-    private static func backend(_ settings: AppSettings) -> AIService? {
-        guard settings.hasBackend, let url = URL(string: settings.backendBaseURL) else { return nil }
-        let client = APIClient(
-            baseURL: url,
-            deviceUserId: settings.deviceUserId,
-            authToken: Keychain.read(.authToken)
-        )
-        return RemoteAIService(client: client)
-    }
+        if settings.useDirectClaudeWhenOffline,
+           let key = Keychain.read(.anthropicKey), !key.isEmpty {
+            return DirectClaudeAIService(apiKey: key)
+        }
 
-    private static func direct() -> AIService? {
-        guard let key = Keychain.read(.anthropicKey), !key.isEmpty else { return nil }
-        return DirectClaudeAIService(apiKey: key)
+        return MockAIService()
     }
 }

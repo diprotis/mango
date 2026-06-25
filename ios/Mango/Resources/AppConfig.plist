@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Baked-in backend endpoints. Fill these after deploying (or let CI inject
+	     them). Leave empty to keep that environment "not configured". -->
+	<key>BetaAPIURL</key>
+	<string></string>
+	<key>ProdAPIURL</key>
+	<string></string>
+</dict>
+</plist>

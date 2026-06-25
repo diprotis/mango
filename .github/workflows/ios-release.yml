@@ -1,0 +1,79 @@
+name: iOS Release (TestFlight)
+
+# Front-end "deploy": archive the app and upload to TestFlight.
+# Triggers on a published GitHub Release, or manually. It is SAFE for forks /
+# contributors without Apple credentials: if the App Store Connect secrets are
+# absent the job no-ops instead of failing. See docs/OPERATIONS.md for the
+# required secrets.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for Apple signing secrets
+        id: gate
+        run: |
+          if [ -n "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" ] \
+            && [ -n "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ] \
+            && [ -n "${{ secrets.APP_STORE_CONNECT_API_KEY_B64 }}" ] \
+            && [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Apple signing secrets not configured — skipping TestFlight upload. See docs/OPERATIONS.md."
+          fi
+
+      - name: Bake backend URLs into AppConfig.plist
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          PB=/usr/libexec/PlistBuddy
+          [ -n "${{ secrets.PROD_API_URL }}" ] && $PB -c "Set :ProdAPIURL ${{ secrets.PROD_API_URL }}" Mango/Resources/AppConfig.plist || true
+          [ -n "${{ secrets.BETA_API_URL }}" ] && $PB -c "Set :BetaAPIURL ${{ secrets.BETA_API_URL }}" Mango/Resources/AppConfig.plist || true
+
+      - name: Install App Store Connect API key
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_B64 }}" | base64 --decode \
+            > ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+      - name: Set Team ID in ExportOptions
+        if: steps.gate.outputs.enabled == 'true'
+        run: /usr/libexec/PlistBuddy -c "Set :teamID ${{ secrets.APPLE_TEAM_ID }}" ExportOptions.plist
+
+      - name: Archive
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          xcodebuild -project Mango.xcodeproj -scheme Mango -configuration Release \
+            -archivePath build/Mango.xcarchive archive \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Export & upload to TestFlight
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/Mango.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8

@@ -1,28 +1,5 @@
 import SwiftUI
 
-enum AIMode: String, CaseIterable, Identifiable {
-    case auto, mock, backend, directClaude
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .auto: return "Automatic"
-        case .mock: return "Offline (Mock)"
-        case .backend: return "Mango Backend"
-        case .directClaude: return "Direct Claude API"
-        }
-    }
-
-    var detail: String {
-        switch self {
-        case .auto: return "Use the backend if set, else a Claude key, else offline."
-        case .mock: return "Believable content generated on-device. No network."
-        case .backend: return "Calls your deployed AWS backend (recommended for production)."
-        case .directClaude: return "Calls Anthropic directly with a key on this device (testing only)."
-        }
-    }
-}
-
 enum ThemePreference: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: String { rawValue }
@@ -40,8 +17,13 @@ enum ThemePreference: String, CaseIterable, Identifiable {
 /// App-wide preferences, persisted in UserDefaults and observable by SwiftUI.
 @Observable
 final class AppSettings {
-    var aiMode: AIMode { didSet { store.set(aiMode.rawValue, forKey: Keys.aiMode) } }
-    var backendBaseURL: String { didSet { store.set(backendBaseURL, forKey: Keys.backend) } }
+    /// Selected backend environment. Defaults to `.mock` so first launch is offline.
+    var apiEnvironment: APIEnvironment { didSet { store.set(apiEnvironment.rawValue, forKey: Keys.environment) } }
+    /// URL for the "personal" environment (your own AWS deploy, e.g. diprotis-dev).
+    var personalBaseURL: String { didSet { store.set(personalBaseURL, forKey: Keys.personalURL) } }
+    /// When the environment is Offline (Mock) and a Claude key is saved, use it on-device.
+    var useDirectClaudeWhenOffline: Bool { didSet { store.set(useDirectClaudeWhenOffline, forKey: Keys.directOffline) } }
+
     var themePreference: ThemePreference { didSet { store.set(themePreference.rawValue, forKey: Keys.theme) } }
     var reminderEnabled: Bool { didSet { store.set(reminderEnabled, forKey: Keys.reminder) } }
 
@@ -52,8 +34,9 @@ final class AppSettings {
 
     init(store: UserDefaults = .standard) {
         self.store = store
-        self.aiMode = AIMode(rawValue: store.string(forKey: Keys.aiMode) ?? "") ?? .auto
-        self.backendBaseURL = store.string(forKey: Keys.backend) ?? ""
+        self.apiEnvironment = APIEnvironment(rawValue: store.string(forKey: Keys.environment) ?? "") ?? .mock
+        self.personalBaseURL = store.string(forKey: Keys.personalURL) ?? ""
+        self.useDirectClaudeWhenOffline = store.bool(forKey: Keys.directOffline)
         self.themePreference = ThemePreference(rawValue: store.string(forKey: Keys.theme) ?? "") ?? .system
         self.reminderEnabled = store.bool(forKey: Keys.reminder)
 
@@ -66,16 +49,28 @@ final class AppSettings {
         }
     }
 
-    var hasBackend: Bool {
-        guard let url = URL(string: backendBaseURL), url.scheme != nil else { return false }
-        return !backendBaseURL.isEmpty
+    /// Resolved base URL for the selected environment (nil when offline/unconfigured).
+    var effectiveBackendURL: URL? {
+        APIEnvironmentResolver.baseURL(
+            for: apiEnvironment,
+            personal: personalBaseURL,
+            beta: AppConfig.betaBaseURL,
+            prod: AppConfig.prodBaseURL
+        )
     }
+
+    /// True when a real environment is selected AND it has a usable URL.
+    var isRealBackend: Bool { apiEnvironment.isReal && effectiveBackendURL != nil }
+
+    /// Read-only URL string for display in Settings.
+    var displayBackendURL: String { effectiveBackendURL?.absoluteString ?? "" }
 
     var hasClaudeKey: Bool { (Keychain.read(.anthropicKey) ?? "").isEmpty == false }
 
     private enum Keys {
-        static let aiMode = "mango.aiMode"
-        static let backend = "mango.backendBaseURL"
+        static let environment = "mango.apiEnvironment"
+        static let personalURL = "mango.personalBaseURL"
+        static let directOffline = "mango.useDirectClaudeWhenOffline"
         static let theme = "mango.theme"
         static let reminder = "mango.reminderEnabled"
         static let deviceId = "mango.deviceUserId"
