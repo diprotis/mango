@@ -1,14 +1,18 @@
+import SwiftData
 import SwiftUI
 
 /// A small account screen: shows the signed-in email (decoded from the id token
-/// for display), and offers sign-out and a (stubbed) account deletion.
+/// for display), and offers sign-out and account deletion.
 struct AccountView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Query private var profiles: [UserProfile]
 
     /// Present the signed-out / sign-in screen.
     @State private var showingAuth = false
     @State private var showingDeleteConfirm = false
+    @State private var isDeleting = false
 
     private var auth: AuthService { app.auth }
 
@@ -54,11 +58,18 @@ struct AccountView: View {
         }
 
         Section {
-            Button("Delete account", role: .destructive) {
+            Button(role: .destructive) {
                 showingDeleteConfirm = true
+            } label: {
+                if isDeleting {
+                    HStack { ProgressView(); Text("Deleting…") }
+                } else {
+                    Text("Delete account")
+                }
             }
+            .disabled(isDeleting)
         } footer: {
-            Text("Deletes your Cognito account and all backend data.")
+            Text("Deletes your Cognito account and all backend data, and resets this device.")
         }
     }
 
@@ -78,13 +89,42 @@ struct AccountView: View {
         Haptics.tap()
     }
 
+    /// Best-effort `DELETE /v1/me` (removes the Cognito user + cascades backend
+    /// data, spec 0004), then a hard local reset: sign out, erase every local
+    /// `Book`, and flip onboarding off so the app restarts at the welcome flow.
+    /// The network call is best-effort — local erasure always proceeds so the
+    /// user isn't stuck if the backend is unreachable or unconfigured.
     private func deleteAccount() {
-        // TODO(M4): call delete endpoint — DELETE /v1/me removes the Cognito user
-        // and cascades backend data deletion (spec 0004). For now, sign out locally.
-        auth.signOut()
-        app.reloadAIService()
-        Haptics.warning()
-        dismiss()
+        isDeleting = true
+        Task {
+            if let client = app.apiClient() {
+                try? await client.delete("/v1/me")
+            }
+            await MainActor.run {
+                auth.signOut()
+                eraseLocalData()
+                app.reloadAIService()
+                isDeleting = false
+                Haptics.warning()
+                dismiss()
+            }
+        }
+    }
+
+    /// Remove all local books and restart onboarding. Keeps the single
+    /// `UserProfile` row but clears its progress and onboarding flag so
+    /// `RootView` shows the onboarding flow again.
+    private func eraseLocalData() {
+        let books = (try? context.fetch(FetchDescriptor<Book>())) ?? []
+        for book in books { context.delete(book) }
+        if let profile = profiles.first {
+            profile.hasOnboarded = false
+            profile.totalXP = 0
+            profile.currentStreak = 0
+            profile.longestStreak = 0
+            profile.lastActiveDay = nil
+        }
+        try? context.save()
     }
 }
 

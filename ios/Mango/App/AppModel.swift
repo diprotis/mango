@@ -24,4 +24,22 @@ final class AppModel {
     func reloadAIService() {
         ai = AIServiceProvider.make(settings: settings, auth: auth)
     }
+
+    /// An `APIClient` for the active real environment, carrying the current id
+    /// token. `nil` when offline/unconfigured (Mock), so callers can degrade
+    /// gracefully. Uses the same resolution as `AIServiceProvider`.
+    func apiClient() -> APIClient? {
+        guard settings.isRealBackend, let url = settings.effectiveBackendURL else { return nil }
+        return APIClient(
+            baseURL: url,
+            deviceUserId: settings.deviceUserId,
+            authToken: auth.session?.idToken
+        )
+    }
+
+    /// A catalog service bound to the current backend (or a nil client when
+    /// offline, in which case its calls throw `APIError.notConfigured`).
+    func catalog() -> CatalogService {
+        CatalogService(client: apiClient())
+    }
 }

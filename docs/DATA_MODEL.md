@@ -89,3 +89,73 @@ Reused (defined elsewhere): `GET/PUT /v1/me/progress`, `POST /v1/content/parse`,
 3. Return a summary count (`itemsDeleted`, `objectsDeleted`).
 
 Cognito user-pool deletion is performed by the app / Cognito, not this handler.
+
+## Data lake & feature store
+
+The **analytics** lake is a *separate* S3 bucket from the product/content bucket
+above. It is provisioned by `AnalyticsStack`
+(`backend/mango_backend/analytics_stack.py`) and pairs with spec
+[`0006-data-lake.md`](specs/0006-data-lake.md). Nothing here is on the product
+read/write path; it is an append-only analytics substrate.
+
+### Zones (key prefixes in the analytics bucket)
+
+| Zone | Prefix | Contents |
+|---|---|---|
+| Raw | `raw/` | Source/landing artifacts + metadata (partitioned) — *planned producers* |
+| Events | `events/dt=YYYY-MM-DD/` | Newline-delimited JSON analytics events from Firehose (GZIP) |
+| Events (errors) | `events-errors/` | Firehose delivery failures |
+| Curated | `curated/` | Cleaned/joined datasets built from raw + events — *planned* |
+| Feature store (offline) | `feature-store/` | Materialized feature sets for training/backfill — *planned* |
+
+**Lifecycle:** objects transition **Standard → Infrequent-Access at 30 days →
+Glacier at 90 days**. The bucket blocks public access, uses SSE-S3, enforces TLS,
+and (in prod) is `RETAIN`ed; non-prod is `DESTROY` + `auto_delete_objects`.
+
+### Events ingestion path
+
+```
+app → POST /v1/events → events Lambda → shared.firehose.put_event
+    → Kinesis Firehose (mango-events-<stage>, DirectPut, GZIP, 64MB / 60s)
+    → s3://<analytics>/events/dt=YYYY-MM-DD/
+```
+
+Each record is one line of JSON shaped to the Glue table columns:
+
+```json
+{ "ts": "<ISO-8601 UTC>", "type": "<event_type>", "userId": "<sub>", "props": { … } }
+```
+
+Emission is **best-effort**: if `EVENTS_STREAM_NAME` is unset (e.g. the offline /
+Mock path or a stage without analytics wired) or the put fails, `put_event` is a
+no-op returning `False` — a request never fails because of telemetry.
+
+### Glue / Athena
+
+A Glue database **`mango_<stage>`** holds an external **`events`** table over
+`s3://<analytics>/events/` using the OpenX JSON SerDe, **partitioned by `dt`**, with
+columns `ts string`, `type string`, `userId string`, `props string`. This makes the
+event log queryable from Athena (e.g. `SELECT type, COUNT(*) FROM mango_<stage>.events
+WHERE dt = '2026-06-25' GROUP BY type`). Partition registration (projection / crawler
+/ `ALTER TABLE`) and any JSON→parquet conversion are follow-ups.
+
+### Online feature store (DynamoDB)
+
+`MangoFeatures-<stage>` is the **online** store for per-entity aggregates, separate
+from the product table:
+
+| PK (`entityId`) | SK (`featureName`) | Attributes |
+|---|---|---|
+| `USER#<sub>` \| `BOOK#<bookId>` | e.g. `xp_7d`, `completion_rate`, `streak_len` | `value`, `updatedAt` |
+
+Pay-per-request; prod has PITR + `RETAIN`. The jobs that populate it (from the lake)
+are out of scope of spec 0006.
+
+### Deletion note
+
+`DELETE /v1/me` currently erases the **product** bucket (`users/<sub>/`) and all
+`USER#<sub>` DynamoDB items — it does **not** yet purge analytics **events** (which
+are partitioned by date, not by user) or `MangoFeatures-<stage>` rows. Erasing the
+event lake per user (partition rewrite, TTL, or per-user prefixes) is a tracked
+follow-up and a privacy prerequisite before any sensitive data is placed in `props`.
+Keep `props` to non-sensitive product signals until then.

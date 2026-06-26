@@ -61,17 +61,33 @@ final class AuthService {
 
     // MARK: - Sign in
 
+    /// An identity provider to jump straight to in the Hosted UI, skipping the
+    /// provider-chooser. `identity_provider` is a Cognito Hosted-UI parameter;
+    /// `Google` / `SignInWithApple` are the conventional names for the federated
+    /// IdPs. Email/phone use the Cognito user pool directly (no hint).
+    enum IdPHint: String {
+        case google = "Google"
+        case apple = "SignInWithApple"
+    }
+
     /// Run the full Hosted-UI sign-in: PKCE challenge → authorize → code → token
     /// exchange → persist. Throws `AuthError` on failure/cancel.
+    ///
+    /// Pass `idpHint` to deep-link to a specific federated provider; omit it to
+    /// show Cognito's full provider list (Google, Apple, phone, email).
     @MainActor
-    func signIn() async throws {
+    func signIn(idpHint: IdPHint? = nil) async throws {
         guard let config else { throw AuthError.notConfigured }
 
         let verifier = PKCE.makeCodeVerifier()
         let challenge = PKCE.codeChallenge(for: verifier)
         let state = PKCE.makeState()
 
-        let authorizeURL = config.authorizeURL(codeChallenge: challenge, state: state)
+        let authorizeURL = config.authorizeURL(
+            codeChallenge: challenge,
+            state: state,
+            idpHint: idpHint?.rawValue
+        )
         let code = try await runWebAuth(url: authorizeURL, callbackScheme: config.redirectScheme, expectedState: state)
         let tokens = try await exchangeCodeForTokens(code: code, verifier: verifier, config: config)
 
@@ -281,12 +297,12 @@ private struct CognitoConfig {
         return components.url
     }
 
-    func authorizeURL(codeChallenge: String, state: String) -> URL {
+    func authorizeURL(codeChallenge: String, state: String, idpHint: String? = nil) -> URL {
         var components = URLComponents()
         components.scheme = "https"
         components.host = domain
         components.path = "/oauth2/authorize"
-        components.queryItems = [
+        var items = [
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
@@ -295,6 +311,10 @@ private struct CognitoConfig {
             URLQueryItem(name: "code_challenge_method", value: "S256"),
             URLQueryItem(name: "code_challenge", value: codeChallenge),
         ]
+        if let idpHint, !idpHint.isEmpty {
+            items.append(URLQueryItem(name: "identity_provider", value: idpHint))
+        }
+        components.queryItems = items
         return components.url ?? fallbackAuthorizeURL
     }
 

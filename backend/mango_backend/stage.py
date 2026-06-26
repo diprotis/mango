@@ -4,6 +4,7 @@ from aws_cdk import Stage
 from constructs import Construct
 
 from .ai_stack import AiStack
+from .analytics_stack import AnalyticsStack
 from .api_stack import ApiStack
 from .auth_stack import AuthStack
 from .data_stack import DataStack
@@ -16,6 +17,7 @@ class MangoStage(Stage):
         data = DataStack(self, "Data", config=config)
         auth = AuthStack(self, "Auth", config=config)
         ai = AiStack(self, "Ai", config=config)
+        analytics = AnalyticsStack(self, "Analytics", config=config)
 
         ApiStack(
             self,
@@ -26,4 +28,7 @@ class MangoStage(Stage):
             user_pool=auth.user_pool,
             user_pool_client=auth.user_pool_client,
             anthropic_secret=ai.anthropic_secret,
+            analytics_bucket=analytics.analytics_bucket,
+            events_stream_name=analytics.delivery_stream_name,
+            features_table=analytics.features_table,
         )

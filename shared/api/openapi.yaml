@@ -96,6 +96,148 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Progress" }
+  /v1/me/profile:
+    get:
+      summary: Read the caller's profile
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+    put:
+      summary: Upsert the caller's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Profile" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+  /v1/me/library:
+    get:
+      summary: List the caller's library (newest first)
+      responses:
+        "200":
+          description: Library items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/LibraryItem" } }
+    post:
+      summary: Add a book to the caller's library
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bookId]
+              properties: { bookId: { type: string } }
+      responses:
+        "200":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryItem" }
+  /v1/me/library/{bookId}:
+    delete:
+      summary: Remove a book from the caller's library
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Removed }
+  /v1/reflections:
+    get:
+      summary: List the caller's reflections (newest first)
+      responses:
+        "200":
+          description: Reflections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Reflection" } }
+    post:
+      summary: Append a reflection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+                chapterRef: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reflection" }
+  /v1/me:
+    delete:
+      summary: Erase all server-side data for the caller (and the Cognito user)
+      responses:
+        "200":
+          description: Deletion summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: boolean }
+                  itemsDeleted: { type: integer }
+                  objectsDeleted: { type: integer }
+  /v1/events:
+    post:
+      summary: Emit an analytics event (forwarded to the data lake)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string }
+                props: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Accepted }
+  /v1/catalog:
+    get:
+      summary: Public built-in catalog of public-domain books
+      security: []
+      responses:
+        "200":
+          description: Catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/CatalogBook" } }
+  /v1/catalog/{id}:
+    get:
+      summary: A single catalog book with full text
+      security: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Catalog book
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBook" }
+        "404": { description: Unknown id }
 components:
   securitySchemes:
     bearerAuth:
@@ -146,6 +288,17 @@ components:
         createdAt: { type: string, format: date-time }
         text: { type: string }
         chapterRef: { type: string, nullable: true }
+    CatalogBook:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: string, nullable: true }
+        excerpt: { type: string }
+        coverHue: { type: integer }
+        wordCount: { type: integer }
+        estimatedMinutes: { type: integer }
+        text: { type: string, nullable: true, description: "present only on the detail endpoint" }
     RoadmapRequest:
       type: object
       required: [profile]

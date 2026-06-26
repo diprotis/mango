@@ -1,11 +1,13 @@
 """DELETE /v1/me — erase all server-side data for the caller.
 
 Removes every single-table item under PK=``USER#<sub>`` and every S3 object under
-the ``users/<sub>/`` prefix, then returns a summary count. Cognito user-pool
-deletion is performed by the app (AdminDeleteUser / DeleteUser) and is out of
-scope here; this handler clears the application data lake + table rows.
+the ``users/<sub>/`` prefix, then best-effort deletes the Cognito user (admin
+API, when ``COGNITO_USER_POOL_ID`` is set), and returns a summary count.
 """
 
+import os
+
+import boto3
 from boto3.dynamodb.conditions import Key
 
 from shared.response import http_method, json_response, ok, user_id
@@ -60,6 +62,21 @@ def _delete_s3_objects(uid: str) -> int:
     return deleted
 
 
+def _delete_cognito_user(uid: str) -> bool:
+    """Best-effort delete the Cognito user via the admin API. No-op when the pool
+    isn't configured (local/test). Cognito admin APIs accept the user's ``sub`` as
+    ``Username``. Never raises — the data deletion above is the hard contract.
+    """
+    pool = os.environ.get("COGNITO_USER_POOL_ID")
+    if not pool:
+        return False
+    try:
+        boto3.client("cognito-idp").admin_delete_user(UserPoolId=pool, Username=uid)
+        return True
+    except Exception:
+        return False
+
+
 def handler(event, context):
     try:
         uid = user_id(event)
@@ -71,12 +88,13 @@ def handler(event, context):
 
     items_deleted = _delete_table_items(uid)
     objects_deleted = _delete_s3_objects(uid)
+    cognito_deleted = _delete_cognito_user(uid)
 
     return ok(
         {
             "deleted": True,
             "itemsDeleted": items_deleted,
             "objectsDeleted": objects_deleted,
-            "note": "Cognito user deletion is handled by the app.",
+            "cognitoDeleted": cognito_deleted,
         }
     )

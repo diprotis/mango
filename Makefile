@@ -5,9 +5,11 @@
 
 # AWS profile for backend deploys (override: make backend-deploy-beta PROFILE=other)
 PROFILE ?= diprotis-dev
+STAGE ?= dev
 
 .PHONY: help bootstrap backend-install backend-test backend-lint backend-synth \
         backend-bootstrap backend-deploy-personal backend-deploy-beta backend-deploy-prod \
+        backend-e2e-local backend-e2e-live backend-deploy-verify \
         ios-open ios-test ios-lint clean
 
 help: ## Show this help
@@ -26,6 +28,15 @@ backend-lint: ## Lint backend (flake8 + black --check)
 
 backend-test: ## Run backend unit tests
 	cd backend && python3 -m pytest -q
+
+backend-e2e-local: ## Run the moto-backed end-to-end journey test (offline)
+	cd backend && python3 -m pytest tests_integration/test_e2e_local.py -q
+
+backend-e2e-live: ## Run live smoke vs a deployed API (needs MANGO_API_URL etc.)
+	cd backend && python3 -m pytest tests_integration/live_smoke.py -q
+
+backend-deploy-verify: ## Deploy a stage then run live smoke (STAGE=dev PROFILE=diprotis-dev)
+	cd backend && bash scripts/deploy_and_verify.sh $(STAGE) $(PROFILE)
 
 backend-synth: ## Synthesize CloudFormation for the beta stage
 	cd backend && npx --yes aws-cdk@2 synth -c stage=beta

@@ -21,12 +21,16 @@ class ApiStack(Stack):
         user_pool,
         user_pool_client,
         anthropic_secret,
+        analytics_bucket,
+        events_stream_name,
+        features_table,
         **kwargs,
     ):
         super().__init__(scope, construct_id, **kwargs)
         # ``anthropic_secret`` is kept in the signature for compatibility with
         # MangoStage but is no longer used: backend AI now runs on Bedrock (IAM).
         del anthropic_secret
+        del analytics_bucket, features_table  # reserved for future producers
         stage = config["environment"]
 
         common_env = {
@@ -37,6 +41,7 @@ class ApiStack(Stack):
             ),
             "BEDROCK_REGION": config.get("bedrockRegion", ""),
             "AI_MAX_EFFORT": str(config.get("aiMaxEffort", True)).lower(),
+            "EVENTS_STREAM_NAME": events_stream_name,
             "STAGE": stage,
         }
 
@@ -65,6 +70,8 @@ class ApiStack(Stack):
         library_fn = make_fn("LibraryFn", "handlers.library.handler", timeout=15)
         reflections_fn = make_fn("ReflectionsFn", "handlers.reflections.handler", timeout=15)
         delete_fn = make_fn("DeleteAccountFn", "handlers.delete_account.handler", timeout=30)
+        events_fn = make_fn("EventsFn", "handlers.events.handler", timeout=10)
+        catalog_fn = make_fn("CatalogFn", "handlers.catalog.handler", timeout=10)
 
         # Least-privilege grants (grade_fn never touches the table)
         for fn in (
@@ -93,6 +100,29 @@ class ApiStack(Stack):
         roadmap_fn.add_to_role_policy(bedrock_policy)
         grade_fn.add_to_role_policy(bedrock_policy)
 
+        # The events Lambda may write only to the analytics Firehose stream.
+        events_stream_arn = Stack.of(self).format_arn(
+            service="firehose",
+            resource="deliverystream",
+            resource_name=events_stream_name,
+        )
+        events_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["firehose:PutRecord", "firehose:PutRecordBatch"],
+                resources=[events_stream_arn],
+            )
+        )
+
+        # Account deletion also removes the Cognito user (admin API, scoped to
+        # this pool). The pool id is passed only to the delete Lambda.
+        delete_fn.add_environment("COGNITO_USER_POOL_ID", user_pool.user_pool_id)
+        delete_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["cognito-idp:AdminDeleteUser"],
+                resources=[user_pool.user_pool_arn],
+            )
+        )
+
         authorizer = authorizers.HttpUserPoolAuthorizer(
             "JwtAuthorizer", user_pool, user_pool_clients=[user_pool_client]
         )
@@ -108,12 +138,15 @@ class ApiStack(Stack):
             ),
         )
 
+        route_count = {"n": 0}
+
         def route(path: str, method: apigw.HttpMethod, fn: _lambda.Function, secured: bool = True):
+            route_count["n"] += 1
             http_api.add_routes(
                 path=path,
                 methods=[method],
                 integration=integrations.HttpLambdaIntegration(
-                    f"{fn.node.id}{method.value}Integ", fn
+                    f"Integ{route_count['n']}{fn.node.id}", fn
                 ),
                 authorizer=authorizer if secured else None,
             )
@@ -132,5 +165,8 @@ class ApiStack(Stack):
         route("/v1/reflections", apigw.HttpMethod.GET, reflections_fn)
         route("/v1/reflections", apigw.HttpMethod.POST, reflections_fn)
         route("/v1/me", apigw.HttpMethod.DELETE, delete_fn)
+        route("/v1/events", apigw.HttpMethod.POST, events_fn)
+        route("/v1/catalog", apigw.HttpMethod.GET, catalog_fn, secured=False)
+        route("/v1/catalog/{id}", apigw.HttpMethod.GET, catalog_fn, secured=False)
 
         CfnOutput(self, "ApiUrl", value=http_api.api_endpoint)

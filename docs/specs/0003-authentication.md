@@ -1,6 +1,6 @@
 # 0003 — Authentication (Cognito + app)
 
-- **Epic:** M3 · **Status:** Approved · **Decision:** Option A — Cognito Hosted UI + ASWebAuthenticationSession · **Updated:** 2026-06-25
+- **Epic:** M3 · **Status:** In progress (backend auth: ✅ done; iOS client + `delete_account`: pending) · **Decision:** Option A — Cognito Hosted UI + ASWebAuthenticationSession · **Updated:** 2026-06-25
 
 ## 1. Summary
 Users sign up / sign in; the app obtains a Cognito JWT and sends it on `/v1/*` so
@@ -41,9 +41,36 @@ password · sign out · delete my account and data.
 
 **Recommendation: Option A.** Confirm before building.
 
-**Backend changes:** add a Cognito **domain** + app-client OAuth config (callback /
-logout URLs, `authorization_code` + PKCE flow, scopes) to `auth_stack.py`; output the
-domain + client id; add a `delete_account` Lambda (with 0004).
+**Backend changes (status: ✅ implemented in `auth_stack.py`):** Hosted UI **domain**
++ public app-client OAuth config (callback `mango://callback` / logout `mango://signout`,
+`authorization_code` + PKCE flow, scopes `openid email profile`) are built, and
+`UserPoolId` / `UserPoolClientId` / `UserPoolDomain` / `Region` are output. Optional
+**Google**, **Sign in with Apple**, and **phone (SMS)** sign-in are integrated into the
+same pool + client, each gated by a config flag (default **off**, so plain `cdk synth`
+needs no secrets). Still TODO: `delete_account` Lambda (with 0004).
+
+**Config keys** (in `backend/config/<stage>.json`): `cognitoDomainPrefix` (""→
+account-scoped default `mango-<stage>-<account>`; must be **globally unique**),
+`enableGoogle`+`googleClientId`, `enableApple`+`appleServicesId`/`appleTeamId`/`appleKeyId`,
+`enablePhone`. When a provider is enabled, the stack creates a placeholder Secrets Manager
+secret (`mango/<stage>/google-oauth`, `mango/<stage>/apple-signin`) whose real value is set
+out-of-band (see Console steps).
+
+### Console steps to enable a provider
+Set the config flag(s), `cdk deploy`, then:
+- **Google:** Google Cloud Console → *APIs & Services → Credentials* → create an **OAuth
+  2.0 Client ID** (type *Web application*). Authorized redirect URI =
+  `https://<domain-prefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse`. Put the
+  Client ID in `googleClientId`; store the **client secret** as the plaintext value of
+  Secrets Manager secret `mango/<stage>/google-oauth` (`aws secretsmanager put-secret-value`).
+- **Apple:** Apple Developer → create a **Services ID** (→ `appleServicesId`) with *Sign In
+  with Apple* enabled and return URL `https://<domain-prefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse`;
+  create a **Sign in with Apple key** (→ `appleKeyId`), note your **Team ID** (→
+  `appleTeamId`), and store the downloaded **`.p8` private-key contents** as the value of
+  secret `mango/<stage>/apple-signin`.
+- **Phone (SMS):** set `enablePhone: true` (the stack provisions the Cognito→SNS IAM role).
+  In the AWS console, move **SNS SMS out of the sandbox** and request a **spending limit**
+  increase; in non-prod, verify recipient numbers in the SNS SMS sandbox first.
 **iOS:** `AuthService` (start session via `ASWebAuthenticationSession`, exchange code
 for tokens, store in Keychain, refresh, expose `currentSession`); a signed-out gate /
 `AuthView`; wire `APIClient.authToken` from the live session; an Account screen (sign

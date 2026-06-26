@@ -5,6 +5,8 @@ struct MainTabView: View {
         TabView {
             NavigationStack { TodayView().mangoDestinations() }
                 .tabItem { Label("Today", systemImage: "sun.max.fill") }
+            NavigationStack { CatalogView().mangoDestinations() }
+                .tabItem { Label("Catalog", systemImage: "sparkles.rectangle.stack.fill") }
             NavigationStack { LibraryView().mangoDestinations() }
                 .tabItem { Label("Library", systemImage: "books.vertical.fill") }
             NavigationStack { JourneyView().mangoDestinations() }

@@ -4,5 +4,13 @@
   "region": "us-east-1",
   "bedrockModelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
   "bedrockRegion": "",
-  "aiMaxEffort": true
+  "aiMaxEffort": true,
+  "cognitoDomainPrefix": "",
+  "enableGoogle": false,
+  "googleClientId": "",
+  "enableApple": false,
+  "appleServicesId": "",
+  "appleTeamId": "",
+  "appleKeyId": "",
+  "enablePhone": false
 }

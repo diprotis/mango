@@ -52,18 +52,42 @@ struct AuthView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             }
 
+            // Primary path: Cognito Hosted UI shows every enabled provider
+            // (Google, Apple, phone, email) on one screen.
             Button {
-                Task { await signIn() }
+                Task { await signIn(hint: nil) }
             } label: {
                 HStack(spacing: 8) {
                     if isSigningIn {
                         ProgressView().tint(Palette.onAccent)
                     }
-                    Text(isSigningIn ? "Signing in…" : "Sign in / Create account")
+                    Text(isSigningIn ? "Signing in…" : "Continue")
                 }
             }
             .buttonStyle(.mangoPrimary(enabled: !isSigningIn))
             .disabled(isSigningIn)
+
+            // Dedicated provider shortcuts (deep-link straight to the IdP).
+            Button {
+                Task { await signIn(hint: .apple) }
+            } label: {
+                Label("Sign in with Apple", systemImage: "apple.logo")
+            }
+            .buttonStyle(.mangoSecondary)
+            .disabled(isSigningIn)
+
+            Button {
+                Task { await signIn(hint: .google) }
+            } label: {
+                Label("Continue with Google", systemImage: "globe")
+            }
+            .buttonStyle(.mangoSecondary)
+            .disabled(isSigningIn)
+
+            Text("Phone and email sign-in are available on the Continue screen.")
+                .font(.caption)
+                .foregroundStyle(Palette.textTertiary)
+                .multilineTextAlignment(.center)
 
             Button("Continue offline") {
                 Haptics.tap()
@@ -76,12 +100,12 @@ struct AuthView: View {
     }
 
     @MainActor
-    private func signIn() async {
+    private func signIn(hint: AuthService.IdPHint?) async {
         errorMessage = nil
         isSigningIn = true
         defer { isSigningIn = false }
         do {
-            try await auth.signIn()
+            try await auth.signIn(idpHint: hint)
             app.reloadAIService()
             Haptics.success()
             dismiss()
