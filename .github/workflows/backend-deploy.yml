@@ -39,7 +39,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -48,8 +48,20 @@ jobs:
           aws-region: us-east-1
 
       - name: Deploy stage
+        id: deploy
         run: |
           STAGE=beta
           if [ "${{ github.event_name }}" = "release" ]; then STAGE=prod; fi
           echo "Deploying stage: $STAGE"
-          npx --yes aws-cdk@2 deploy -c stage=$STAGE --require-approval never --all
+          npx --yes aws-cdk@2 deploy -c stage=$STAGE --require-approval never --all \
+            --outputs-file /tmp/outputs.json
+          API=$(python -c "import json;d=json.load(open('/tmp/outputs.json'));print({k:v for s in d.values() for k,v in s.items()}.get('ApiUrl',''))")
+          echo "api_url=$API" >> "$GITHUB_OUTPUT"
+
+      # Prove the deploy is live: public endpoints (health, catalog, unauth 401).
+      # The authenticated/real-Bedrock journey is reserved for `make
+      # backend-deploy-verify` (it creates users + invokes Bedrock).
+      - name: Post-deploy smoke (public endpoints)
+        env:
+          MANGO_API_URL: ${{ steps.deploy.outputs.api_url }}
+        run: python -m pytest tests_integration/live_smoke.py -q

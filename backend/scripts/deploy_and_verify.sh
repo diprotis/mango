@@ -4,6 +4,7 @@
 #
 #   bash scripts/deploy_and_verify.sh [STAGE] [PROFILE]
 #   STAGE   default: dev      PROFILE default: diprotis-dev
+#   PROFILE may be "" (or none/-) to use ambient credentials (CI / OIDC role).
 #
 # Prereqs (one-time, see docs/DEPLOY.md):
 #   * AWS creds for the profile (`aws sso login --profile <p>` or keys)
@@ -19,10 +20,19 @@ cd "$(dirname "$0")/.."  # -> backend/
 
 banner() { printf '\n\033[1m▶ %s\033[0m\n' "$*"; }
 
+# PROFILE is optional: "" / none / - uses ambient credentials (CI OIDC role);
+# a named profile is used for local SSO/keys.
+PROFILE_ARG=""
+case "${PROFILE}" in
+  "" | none | -) PROFILE_LABEL="ambient creds" ;;
+  *) PROFILE_ARG="--profile ${PROFILE}"; PROFILE_LABEL="profile ${PROFILE}" ;;
+esac
+
 OUTPUTS="/tmp/mango-${STAGE}-outputs.json"
 
-banner "Deploying Mango-${STAGE} (profile ${PROFILE})"
-npx --yes aws-cdk@2 deploy -c stage="${STAGE}" --profile "${PROFILE}" \
+banner "Deploying Mango-${STAGE} (${PROFILE_LABEL})"
+# shellcheck disable=SC2086
+npx --yes aws-cdk@2 deploy -c stage="${STAGE}" ${PROFILE_ARG} \
   --require-approval never --all --outputs-file "${OUTPUTS}"
 
 banner "Reading stack outputs from ${OUTPUTS}"
@@ -41,7 +51,8 @@ for var, key in (("MANGO_API_URL", "ApiUrl"),
 PY
 )"
 export MANGO_API_URL MANGO_USER_POOL_ID MANGO_CLIENT_ID
-export MANGO_REGION="${AWS_REGION:-$(aws configure get region --profile "${PROFILE}" 2>/dev/null || echo us-east-1)}"
+# shellcheck disable=SC2086
+export MANGO_REGION="${AWS_REGION:-$(aws configure get region ${PROFILE_ARG} 2>/dev/null || echo us-east-1)}"
 
 echo "  API_URL  = ${MANGO_API_URL:-<none>}"
 echo "  POOL_ID  = ${MANGO_USER_POOL_ID:-<none>}"
