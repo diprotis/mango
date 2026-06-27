@@ -6,6 +6,8 @@ without depending on the unit conftest. The single-table key schema and the GSI1
 index match ``DataStack`` so the library/reflection queries behave like prod.
 """
 
+import os
+
 import boto3
 import pytest
 from moto import mock_aws
@@ -14,9 +16,19 @@ TABLE = "MangoE2E"
 BUCKET = "mango-e2e-bucket"
 REGION = "us-east-1"
 
+# ``live_smoke.py`` shares this directory and talks to REAL AWS; it is active iff
+# MANGO_API_URL is set. The offline (moto) fixtures below must NOT clobber the
+# real AWS credentials in that case — fake "testing" keys make boto3 reject every
+# real call with UnrecognizedClientException.
+_LIVE = bool(os.environ.get("MANGO_API_URL"))
+
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
+    if _LIVE:
+        # Live smoke run: leave the ambient AWS credentials / profile untouched so
+        # boto3 (Cognito admin flow) authenticates against the deployed account.
+        return
     # STAGE=test makes shared.response.user_id honor the x-mango-user header,
     # so each simulated request carries an identity exactly like a JWT sub would.
     monkeypatch.setenv("TABLE_NAME", TABLE)

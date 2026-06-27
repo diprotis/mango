@@ -3,7 +3,7 @@ import json
 import boto3
 
 from handlers import generate_roadmap
-from shared import claude
+from shared import agent
 from tests.conftest import BUCKET, TABLE
 
 
@@ -57,7 +57,7 @@ _FAKE_ROADMAP = {
 
 def test_generate_roadmap_happy_path(aws, monkeypatch):
     book_id = _seed_book()
-    monkeypatch.setattr(claude, "generate_roadmap", lambda *a, **k: dict(_FAKE_ROADMAP))
+    monkeypatch.setattr(agent, "generate_roadmap", lambda *a, **k: dict(_FAKE_ROADMAP))
     resp = generate_roadmap.handler(
         {"body": json.dumps({"bookId": book_id, "profile": {"goals": ["focus"]}})}, None
     )

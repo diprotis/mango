@@ -44,14 +44,16 @@ backend-synth: ## Synthesize CloudFormation for the beta stage
 backend-bootstrap: ## One-time CDK bootstrap for the target account/region
 	cd backend && npx --yes aws-cdk@2 bootstrap --profile $(PROFILE)
 
+# Stacks live in a CDK Stage construct (nested assembly), so select them with a
+# "Mango-<stage>/*" glob — `--all` only sees the main assembly and finds nothing.
 backend-deploy-personal: ## Deploy the dev stage to your personal AWS (PROFILE=diprotis-dev)
-	cd backend && npx --yes aws-cdk@2 deploy -c stage=dev --profile $(PROFILE) --require-approval never --all
+	cd backend && npx --yes aws-cdk@2 deploy -c stage=dev --profile $(PROFILE) --require-approval never "Mango-dev/*"
 
 backend-deploy-beta: ## Deploy the Beta stage (PROFILE=diprotis-dev by default)
-	cd backend && npx --yes aws-cdk@2 deploy -c stage=beta --profile $(PROFILE) --require-approval never --all
+	cd backend && npx --yes aws-cdk@2 deploy -c stage=beta --profile $(PROFILE) --require-approval never "Mango-beta/*"
 
 backend-deploy-prod: ## Deploy the Prod stage
-	cd backend && npx --yes aws-cdk@2 deploy -c stage=prod --profile $(PROFILE) --require-approval never --all
+	cd backend && npx --yes aws-cdk@2 deploy -c stage=prod --profile $(PROFILE) --require-approval never "Mango-prod/*"
 
 # ───────── iOS (Xcode) ─────────
 ios-open: ## Open the iOS app in Xcode

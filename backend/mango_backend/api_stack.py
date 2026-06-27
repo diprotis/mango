@@ -37,7 +37,7 @@ class ApiStack(Stack):
             "TABLE_NAME": table.table_name,
             "BUCKET_NAME": bucket.bucket_name,
             "BEDROCK_MODEL_ID": config.get(
-                "bedrockModelId", "anthropic.claude-3-5-sonnet-20240620-v1:0"
+                "bedrockModelId", "us.anthropic.claude-opus-4-8"
             ),
             "BEDROCK_REGION": config.get("bedrockRegion", ""),
             "AI_MAX_EFFORT": str(config.get("aiMaxEffort", True)).lower(),

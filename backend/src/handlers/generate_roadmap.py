@@ -6,7 +6,7 @@ iOS app sends) OR a stored ``bookId`` whose text is loaded from S3.
 
 import json
 
-from shared import claude
+from shared import agent
 from shared.response import bad_request, not_found, ok, parse_body, server_error
 from shared.storage import bucket_name, s3_client, table
 
@@ -43,7 +43,7 @@ def handler(event, context):
         return bad_request("provide either book.text (inline) or bookId")
 
     try:
-        roadmap = claude.generate_roadmap(book, profile, full_text[:12000])
+        roadmap = agent.generate_roadmap(book, profile, full_text[:12000])
     except Exception as exc:  # noqa: BLE001
         return server_error(f"roadmap generation failed: {exc}")
 

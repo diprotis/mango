@@ -77,7 +77,7 @@ aws secretsmanager put-secret-value \
   --secret-string '{"apiKey":"sk-ant-..."}'
 ```
 
-The Lambdas read and cache it via `shared/claude.py`; the key never leaves the
+The Lambdas read and cache it via `shared/agent.py`; the key never leaves the
 server side.
 
 ## GitHub OIDC deploy role

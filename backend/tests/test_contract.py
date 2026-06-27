@@ -1,7 +1,7 @@
 import json
 
 from handlers import generate_roadmap, progress
-from shared import claude
+from shared import agent
 
 _FAKE = {
     "title": "T",
@@ -41,7 +41,7 @@ def _event(method, body=None, headers=None):
 
 def test_roadmap_accepts_inline_book(monkeypatch):
     # The iOS app sends inline book text, not a bookId.
-    monkeypatch.setattr(claude, "generate_roadmap", lambda *a, **k: dict(_FAKE))
+    monkeypatch.setattr(agent, "generate_roadmap", lambda *a, **k: dict(_FAKE))
     resp = generate_roadmap.handler(
         {
             "body": json.dumps(

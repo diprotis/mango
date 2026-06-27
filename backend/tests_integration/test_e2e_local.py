@@ -3,7 +3,7 @@
 This is the *automated proof* that the Mango APIs persist state end to end. It
 drives the real handler functions with simulated API-Gateway-v2 events (the exact
 shape API Gateway delivers) and asserts the data actually lands in DynamoDB / S3
-between steps. Only the Bedrock call is faked (monkeypatched ``shared.claude``);
+between steps. Only the Bedrock call is faked (monkeypatched ``shared.agent``);
 everything else runs against moto. No network, no AWS account, no auth server.
 
 Journey (single user, identified by an ``x-mango-user`` header — STAGE=test):
@@ -28,7 +28,7 @@ from handlers import (
     progress,
     reflections,
 )
-from shared import claude
+from shared import agent
 from shared.catalog_data import DUMMY_BOOK_ID
 from tests_integration.conftest import BUCKET, REGION, TABLE
 
@@ -114,7 +114,7 @@ def test_full_user_journey_persists_end_to_end(aws, monkeypatch):
     assert isinstance(book_text, str) and len(book_text) > 50
 
     # ---- (b) Generate a roadmap from the inline text (Bedrock monkeypatched) ----
-    monkeypatch.setattr(claude, "generate_roadmap", lambda *a, **k: dict(_CANNED_ROADMAP))
+    monkeypatch.setattr(agent, "generate_roadmap", lambda *a, **k: dict(_CANNED_ROADMAP))
     status, roadmap = _call(
         generate_roadmap,
         "POST",

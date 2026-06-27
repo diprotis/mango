@@ -4,6 +4,14 @@ Calls Claude through ``bedrock-runtime:InvokeModel`` using the Anthropic
 "messages" body format, so the rest of the codebase (prompt building + JSON
 extraction) is unchanged. The Bedrock client lives behind ``_runtime`` so tests
 can monkeypatch it without hitting AWS.
+
+Body contract notes (verified against the deployed model, Claude Opus 4.8):
+  * ``temperature`` is rejected by current-generation models, so we never send
+    it — it is optional for every model, so omitting it is universally safe.
+  * Max-effort uses adaptive extended thinking (``thinking.type=adaptive`` +
+    ``output_config.effort``); the legacy ``thinking.type=enabled`` form is
+    rejected by current models. If a model rejects the thinking block at all we
+    retry once with a plain body.
 """
 
 import json
@@ -31,23 +39,24 @@ def _max_effort() -> bool:
     return os.environ.get("AI_MAX_EFFORT", "true").lower() == "true"
 
 
-def _invoke(system: str, user: str, max_tokens: int = 1500, temperature: float = 0.4) -> str:
+def _invoke(system: str, user: str, max_tokens: int = 1500) -> str:
     model_id = os.environ["BEDROCK_MODEL_ID"]
 
-    def _body(thinking: bool) -> dict:
-        body = {
-            "anthropic_version": _ANTHROPIC_VERSION,
-            "max_tokens": max_tokens,
-            "system": system,
-            "messages": [{"role": "user", "content": user}],
-            "temperature": temperature,
-        }
-        if thinking:
-            # Extended thinking requires temperature=1 and enough headroom for
-            # the thinking budget plus the visible answer.
-            body["thinking"] = {"type": "enabled", "budget_tokens": 4000}
-            body["temperature"] = 1
-            body["max_tokens"] = max(max_tokens, 4000 + 1024)
+    base = {
+        "anthropic_version": _ANTHROPIC_VERSION,
+        "max_tokens": max_tokens,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+    }
+
+    def _with_thinking() -> dict:
+        # Adaptive extended thinking: the model manages its own thinking budget
+        # via ``output_config.effort``. Give the visible answer extra headroom so
+        # the JSON body isn't truncated by the thinking tokens.
+        body = dict(base)
+        body["max_tokens"] = max(max_tokens, 2500) + 4096
+        body["thinking"] = {"type": "adaptive"}
+        body["output_config"] = {"effort": "high"}
         return body
 
     def _call(body: dict) -> str:
@@ -61,15 +70,14 @@ def _invoke(system: str, user: str, max_tokens: int = 1500, temperature: float =
         parts = payload.get("content", [])
         return "".join(p.get("text", "") for p in parts if p.get("type") == "text")
 
-    thinking = _max_effort()
-    try:
-        return _call(_body(thinking))
-    except botocore.exceptions.ClientError:
-        # Max-effort (extended thinking) is best-effort: if the chosen model
-        # rejects the thinking block, retry once without it.
-        if thinking:
-            return _call(_body(False))
-        raise
+    if _max_effort():
+        try:
+            return _call(_with_thinking())
+        except botocore.exceptions.ClientError:
+            # Extended thinking is best-effort: if the model rejects the thinking
+            # block, retry once with a plain body.
+            return _call(base)
+    return _call(base)
 
 
 def extract_json(text: str) -> dict:
@@ -86,7 +94,6 @@ def generate_roadmap(book: dict, profile: dict, excerpt_text: str) -> dict:
         prompts.roadmap_system(),
         prompts.roadmap_user(book, profile, excerpt_text),
         max_tokens=2500,
-        temperature=0.5,
     )
     return extract_json(out)
 
@@ -96,6 +103,5 @@ def grade(kind: str, prompt: str, answer: str) -> dict:
         prompts.grade_system(),
         prompts.grade_user(kind, prompt, answer),
         max_tokens=600,
-        temperature=0.2,
     )
     return extract_json(out)

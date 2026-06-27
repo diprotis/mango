@@ -25,20 +25,34 @@ banner() { printf '\n\033[1m▶ %s\033[0m\n' "$*"; }
 PROFILE_ARG=""
 case "${PROFILE}" in
   "" | none | -) PROFILE_LABEL="ambient creds" ;;
-  *) PROFILE_ARG="--profile ${PROFILE}"; PROFILE_LABEL="profile ${PROFILE}" ;;
+  *)
+    PROFILE_ARG="--profile ${PROFILE}"
+    PROFILE_LABEL="profile ${PROFILE}"
+    # Export so the pytest subprocess (boto3 in live_smoke.py) authenticates with
+    # the same identity — `--profile` only reaches the CDK CLI, not boto3.
+    export AWS_PROFILE="${PROFILE}"
+    ;;
 esac
 
 OUTPUTS="/tmp/mango-${STAGE}-outputs.json"
 
 banner "Deploying Mango-${STAGE} (${PROFILE_LABEL})"
+# The stacks live inside a CDK Stage construct ("Mango-<stage>"), so they are in
+# a NESTED cloud assembly. `--all` only sees the main assembly and finds nothing
+# ("No stack found in the main cloud assembly"); select the stage's stacks with
+# a glob instead. `stage` maps 1:1 to the construct id in every config/<stage>.json.
 # shellcheck disable=SC2086
 npx --yes aws-cdk@2 deploy -c stage="${STAGE}" ${PROFILE_ARG} \
-  --require-approval never --all --outputs-file "${OUTPUTS}"
+  --require-approval never "Mango-${STAGE}/*" --outputs-file "${OUTPUTS}"
 
 banner "Reading stack outputs from ${OUTPUTS}"
 # Flatten every stage stack's outputs into one map, then pull by output key.
 # Scoped to THIS deploy's outputs file, so there are no cross-stage collisions.
-eval "$(python3 - "${OUTPUTS}" <<'PY'
+# NOTE: write `export …` lines to a temp file and `source` it rather than
+# `eval "$(python3 … <<'PY' … PY)"` — a quoted heredoc nested inside command
+# substitution mis-parses on the closing `)` and yields empty/garbage values.
+ENVFILE="$(mktemp)"
+python3 - "${OUTPUTS}" > "${ENVFILE}" <<'PY'
 import json, sys
 data = json.load(open(sys.argv[1]))
 flat = {}
@@ -47,10 +61,11 @@ for stack_outputs in data.values():
 for var, key in (("MANGO_API_URL", "ApiUrl"),
                  ("MANGO_USER_POOL_ID", "UserPoolId"),
                  ("MANGO_CLIENT_ID", "UserPoolClientId")):
-    print(f'{var}="{flat.get(key, "")}"')
+    print(f'export {var}="{flat.get(key, "")}"')
 PY
-)"
-export MANGO_API_URL MANGO_USER_POOL_ID MANGO_CLIENT_ID
+# shellcheck disable=SC1090
+source "${ENVFILE}"
+rm -f "${ENVFILE}"
 # shellcheck disable=SC2086
 export MANGO_REGION="${AWS_REGION:-$(aws configure get region ${PROFILE_ARG} 2>/dev/null || echo us-east-1)}"
 
