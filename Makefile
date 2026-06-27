@@ -63,10 +63,17 @@ ios-lint: ## Run SwiftLint (brew install swiftlint)
 	cd ios && swiftlint --config .swiftlint.yml
 
 ios-test: ## Build & run iOS unit tests on a simulator
-	cd ios && xcodebuild test \
+	@cd ios && \
+	SIM_ID=$$(xcrun simctl list devices available -j \
+		| python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; \
+ids=[v['udid'] for rs in sorted(d) for v in d[rs] if 'iPhone' in v['name']]; \
+print(ids[0] if ids else '')"); \
+	if [ -z "$$SIM_ID" ]; then echo "No available iPhone simulator found"; exit 1; fi; \
+	echo "Using simulator $$SIM_ID"; \
+	xcodebuild test \
 		-project Mango.xcodeproj \
 		-scheme Mango \
-		-destination 'platform=iOS Simulator,name=iPhone 16' \
+		-destination "platform=iOS Simulator,id=$$SIM_ID" \
 		-quiet
 
 clean: ## Remove build artifacts

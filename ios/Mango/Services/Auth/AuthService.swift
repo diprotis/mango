@@ -284,6 +284,11 @@ private struct CognitoConfig {
 
     var redirectURI: String { "\(redirectScheme)://callback" }
 
+    /// Post-logout redirect. Distinct from `redirectURI`, and must match a URL
+    /// registered in the Cognito app client's logout URLs (auth_stack registers
+    /// `<scheme>://signout`).
+    var signOutURI: String { "\(redirectScheme)://signout" }
+
     var tokenURL: URL { base?.appendingPathComponent("oauth2/token") ?? fallbackTokenURL }
 
     var logoutURL: URL? {
@@ -292,7 +297,7 @@ private struct CognitoConfig {
         }
         components.queryItems = [
             URLQueryItem(name: "client_id", value: clientId),
-            URLQueryItem(name: "logout_uri", value: redirectURI),
+            URLQueryItem(name: "logout_uri", value: signOutURI),
         ]
         return components.url
     }
