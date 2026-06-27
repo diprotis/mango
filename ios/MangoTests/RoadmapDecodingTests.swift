@@ -26,9 +26,14 @@ final class RoadmapDecodingTests: XCTestCase {
     }
 
     func testGradeResultDecode() throws {
-        let dto = try GradeResultDTO.decodeLoosely(from: "{\"score\":0.8,\"feedback\":\"Nice.\"}")
+        // Mirrors the real grade contract (openapi GradeResult / backend always
+        // returns xpAwarded), so the fixture must carry it.
+        let dto = try GradeResultDTO.decodeLoosely(
+            from: "{\"score\":0.8,\"feedback\":\"Nice.\",\"xpAwarded\":20}"
+        )
         XCTAssertEqual(dto.score, 0.8, accuracy: 0.001)
         XCTAssertEqual(dto.feedback, "Nice.")
+        XCTAssertEqual(dto.xpAwarded, 20)
     }
 
     func testNoJSONThrows() {

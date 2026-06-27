@@ -5,7 +5,7 @@
 	<!-- Baked-in backend endpoints. Fill these after deploying (or let CI inject
 	     them). Leave empty to keep that environment "not configured". -->
 	<key>BetaAPIURL</key>
-	<string></string>
+	<string>https://tvtw0hcc45.execute-api.us-east-1.amazonaws.com</string>
 	<key>ProdAPIURL</key>
 	<string></string>
 
@@ -15,12 +15,12 @@
 	     <CognitoRedirectScheme>://callback and the scheme must also be registered
 	     as a URL Type in the app target's Info settings. -->
 	<key>CognitoDomain</key>
-	<string></string>
+	<string>mango-beta-058264317678.auth.us-east-1.amazoncognito.com</string>
 	<key>CognitoClientId</key>
-	<string></string>
+	<string>484pv5c8lgpnkrdtarfemkolmg</string>
 	<key>CognitoRegion</key>
-	<string></string>
+	<string>us-east-1</string>
 	<key>CognitoRedirectScheme</key>
-	<string></string>
+	<string>mango</string>
 </dict>
 </plist>
