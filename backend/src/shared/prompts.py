@@ -11,14 +11,14 @@ Return JSON matching exactly this shape:
 {
   "title": string,                         // a short journey title
   "summary": string,                       // 1-2 sentences on what they'll gain
-  "milestones": [                          // EXACTLY 3 milestones
+  "milestones": [                          // EXACTLY 4 milestones
     {
       "title": string,
       "subtitle": string,
       "lessons": [                         // EXACTLY 2 lessons per milestone
         {
           "title": string,
-          "readingSummary": string,        // 1-2 sentence summary of the section
+          "readingSummary": string,        // 2-3 sentence summary of the section
           "estimatedMinutes": integer,
           "exercises": [                   // EXACTLY 2 exercises, mixed kinds
             {
@@ -34,9 +34,9 @@ Return JSON matching exactly this shape:
     }
   ]
 }
-Rules: keep it specific to THIS book's ideas; make reflections personal; make the
-application task something doable in a day. Keep prose tight (the reader wants a
-focused journey, not an essay). Output JSON only."""
+Rules: keep it specific to THIS book's ideas; cover the book's major themes across
+the 4 milestones; make reflections personal and probing; make each application task
+a concrete thing doable in a day; keep readingSummaries concise. Output JSON only."""
 
 _GRADE_SYSTEM = """You are Mango's encouraging but honest learning coach. You grade a \
 reader's free-text response to a reflection or application task. Output STRICT JSON \

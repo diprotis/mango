@@ -53,9 +53,11 @@ def _invoke(system: str, user: str, max_tokens: int = 1500) -> str:
         # Adaptive extended thinking: the model manages its own thinking budget
         # via ``output_config.effort``. Extended thinking shares the max_tokens
         # budget, so add headroom for the thinking tokens on top of the visible
-        # answer or the JSON body gets truncated. Effort is "medium": the roadmap
-        # is a well-specified JSON task, and the API Gateway integration caps the
-        # synchronous call at 30s, so we trade a little depth for latency margin.
+        # answer or the JSON body gets truncated. Roadmap generation runs in the
+        # async worker (60s budget, off the API Gateway request path). Effort is
+        # "medium": measured against real Bedrock, "high" pushed the structured
+        # JSON past the token budget (truncation) and toward ~45-50s; medium
+        # reliably completes valid JSON in ~27s.
         body = dict(base)
         body["max_tokens"] = max_tokens + 4096
         body["thinking"] = {"type": "adaptive"}
@@ -93,13 +95,13 @@ def extract_json(text: str) -> dict:
 
 
 def generate_roadmap(book: dict, profile: dict, excerpt_text: str) -> dict:
-    # A focused 3×2×2 journey fits comfortably in ~1500 visible tokens; capping
-    # output here is the main lever that keeps the synchronous call under the
-    # API Gateway 30s integration timeout (generation time scales with output).
+    # A 4×2×2 journey (~2300 visible tokens, measured); 3000 leaves margin so the
+    # JSON completes naturally (stop_reason=end_turn) rather than truncating. Runs
+    # in the async worker (60s budget), generating in ~27s against real Bedrock.
     out = _invoke(
         prompts.roadmap_system(),
         prompts.roadmap_user(book, profile, excerpt_text),
-        max_tokens=1600,
+        max_tokens=3000,
     )
     return extract_json(out)
 
