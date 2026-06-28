@@ -18,6 +18,7 @@ import json
 import os
 import uuid
 
+from . import catalog_data
 from .storage import bucket_name, s3_client, table
 
 PENDING = "pending"
@@ -59,20 +60,32 @@ def resolve_book(body: dict) -> tuple:
         return book, inline_text, None, None
 
     if book_id:
+        # First try a user-imported book (DynamoDB BOOK#<id> + text in S3).
         item = table().get_item(Key={"PK": f"BOOK#{book_id}", "SK": "META"}).get("Item")
-        if not item:
-            return None, None, None, (404, "unknown bookId")
-        try:
-            obj = s3_client().get_object(Bucket=bucket_name(), Key=item["contentRef"])
-            full_text = obj["Body"].read().decode("utf-8", errors="replace")
-        except Exception as exc:  # noqa: BLE001
-            return None, None, None, (500, f"failed to load book content: {exc}")
-        book = {
-            "title": item.get("title"),
-            "author": item.get("author"),
-            "wordCount": int(item.get("wordCount", 0)),
-        }
-        return book, full_text, book_id, None
+        if item:
+            try:
+                obj = s3_client().get_object(Bucket=bucket_name(), Key=item["contentRef"])
+                full_text = obj["Body"].read().decode("utf-8", errors="replace")
+            except Exception as exc:  # noqa: BLE001
+                return None, None, None, (500, f"failed to load book content: {exc}")
+            book = {
+                "title": item.get("title"),
+                "author": item.get("author"),
+                "wordCount": int(item.get("wordCount", 0)),
+            }
+            return book, full_text, book_id, None
+
+        # Otherwise fall back to the bundled catalog (text is inline, no S3).
+        entry = catalog_data.get_item(book_id)
+        if entry:
+            book = {
+                "title": entry.get("title"),
+                "author": entry.get("author"),
+                "wordCount": int(entry.get("wordCount", 0)),
+            }
+            return book, entry.get("text", ""), book_id, None
+
+        return None, None, None, (404, "unknown bookId")
 
     return None, None, None, (400, "provide either book.text (inline) or bookId")
 

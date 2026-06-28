@@ -87,6 +87,23 @@ def test_generate_roadmap_enqueues_then_completes(aws, monkeypatch):
     assert job["roadmap"]["milestones"][0]["lessons"][0]["exercises"][0]["xp"] == 25
 
 
+def test_generate_roadmap_from_catalog_book_id(aws, monkeypatch):
+    # A bundled-catalog bookId has no DynamoDB BOOK# row and no S3 object; it must
+    # resolve from catalog_data (text inline) rather than 404.
+    from shared.catalog_data import DUMMY_BOOK_ID
+
+    monkeypatch.setattr(agent, "generate_roadmap", lambda *a, **k: dict(_FAKE_ROADMAP))
+    resp = generate_roadmap.handler({"body": json.dumps({"bookId": DUMMY_BOOK_ID})}, None)
+    assert resp["statusCode"] == 202
+    job_id = json.loads(resp["body"])["jobId"]
+
+    poll = _status(job_id)
+    assert poll["statusCode"] == 200
+    job = json.loads(poll["body"])
+    assert job["status"] == "complete"
+    assert job["roadmap"]["bookId"] == DUMMY_BOOK_ID
+
+
 def test_roadmap_job_status_unknown_is_404(aws):
     poll = _status("no-such-job")
     assert poll["statusCode"] == 404
