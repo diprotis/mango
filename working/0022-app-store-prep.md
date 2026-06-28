@@ -385,8 +385,8 @@ The app is **submittable** when all are true:
   app; offline-first), Direct-Claude Keychain key.
 - Notifications: `ios/Mango/Services/Notifications/NotificationService.swift`
   (single ~1/day reminder).
-- Privacy-relevant data flows: `feature-analytics-events-ios.md`,
-  `feature-feature-store-personalization.md`,
+- Privacy-relevant data flows: `0015-analytics-events-ios.md`,
+  `0020-feature-store-personalization.md`,
   [`0006-data-lake.md`](../docs/specs/0006-data-lake.md) §9 (erasure follow-ups),
   [`../docs/DATA_MODEL.md`](../docs/DATA_MODEL.md).
 - Apple guidelines referenced: 4.8 (Sign in with Apple), 5.1.1(v) (account deletion),

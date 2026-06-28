@@ -46,6 +46,19 @@ per-day `ActivityDay` (`lessonsCompleted`, `xpEarned`, `exercisesCompleted`), ad
 streak via the pure `StreakCalculator`, and derives level via `LevelCurve`. Insight Review
 plugs into exactly these seams.
 
+## Pivot impact (see 0008)
+`0008-product-reframe-activity-first.md` removes the in-app Reader and reframes Mango as an
+activities-first product (users read on their own; Mango runs the active-learning loop). Insight
+Review is **reinforced, not broken** by this: its `ReviewCard`s are generated from **completed
+activities** — missed quiz items, the lesson's `readingSummary` recap, and saved reflections — all
+of which already exist on-device **independent of any in-app reading**. The factory hooks
+`GamificationEngine.recordLessonCompletion` (the activity-completion seam, not a reading signal), so
+nothing here depends on the deleted Reader or on `Book.fullText`/`readProgress` (which `0008`
+removes). The "key idea" card draws from `Lesson.readingSummary` — a generated recap/orientation,
+**not** book body text — so it stays valid post-pivot. Net effect: review simply becomes one of the
+several "engaging activities" the reframed product is built around; no `ReviewCard`/scheduler change
+is required by `0008`.
+
 ## 4. User stories
 - As a daily learner, I open Mango and do a ~60-second review of past ideas before anything
   else, reinforcing what I learned.
@@ -287,6 +300,6 @@ session end ─▶ recordReviewSession ─▶ advanceStreak(StreakCalculator) + 
 - iOS: `Services/Gamification/{GamificationEngine,StreakCalculator,LevelCurve}.swift`,
   `Models/{RoadmapModels,UserProfile,ActivityDay,Enums,AchievementCatalog}.swift`,
   `DesignSystem/` (`Palette`/`Typo`/`Metrics`/`Haptics`), `App/Route`.
-- Interacts with `working/feature-progress-sync.md` (Epic M5 — `reviewXP` must keep `totalXP`
+- Interacts with `working/0014-progress-sync.md` (Epic M5 — `reviewXP` must keep `totalXP`
   honest for the `max`-merge). Pure-scheduler pattern mirrors existing `LevelCurve`/
   `StreakCalculator` tests in `MangoTests/`.

@@ -283,7 +283,7 @@ background ─▶ flushNow
   *Mitigation:* acceptable (freezes are white-hat, cheap, earnable); revisit only if abused.
 - **R-5 No server XP ledger yet.** Leagues (M8) need a trustworthy XP figure; absolute-snapshot
   sync trusts the client's `totalXP`. *Mitigation:* fine for personal sync; M8 introduces a
-  server-validated awarded-XP ledger (see `feature-social-leagues.md` §6 anti-cheat) which this
+  server-validated awarded-XP ledger (see `0021-social-leagues.md` §6 anti-cheat) which this
   spec's `max`-merge is forward-compatible with (the ledger sum becomes the authoritative
   `totalXP` the merge maxes against).
 - **Decisions needed:**
@@ -315,4 +315,4 @@ background ─▶ flushNow
   `Services/Auth/AuthService.swift`, `Models/UserProfile.swift`, `Models/ActivityDay.swift`,
   `Services/Gamification/{GamificationEngine,StreakCalculator,LevelCurve}.swift`.
 - Spec `docs/specs/0003-authentication.md` (sign-in dependency); `docs/specs/0004-data-model-and-lake.md`
-  (single-table patterns). Gate for `working/feature-social-leagues.md` (Epic M8).
+  (single-table patterns). Gate for `working/0021-social-leagues.md` (Epic M8).

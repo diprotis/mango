@@ -389,5 +389,5 @@ view/event site → analytics.track(.case(payload))
 - Specs/docs: [`0006-data-lake.md`](../docs/specs/0006-data-lake.md),
   [`../docs/DATA_MODEL.md`](../docs/DATA_MODEL.md) §"Data lake & feature store",
   [`SPEC_TEMPLATE.md`](../docs/specs/SPEC_TEMPLATE.md).
-- Sibling specs: `feature-feature-store-personalization.md`,
-  `feature-app-store-prep.md`.
+- Sibling specs: `0020-feature-store-personalization.md`,
+  `0022-app-store-prep.md`.

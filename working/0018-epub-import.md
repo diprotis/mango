@@ -55,7 +55,7 @@ two points:
   - Server-side EPUB parsing (the `/content/parse` endpoint) — local only for now;
     mirrors how the other connectors run on-device.
   - Re-flowing/throttling for very large EPUBs — large-file handling is delegated to the
-    shared background pipeline in **feature-pdf-background-parsing.md** (see §10).
+    shared background pipeline in **0017-pdf-background-parsing.md** (see §10).
 
 ## 3. Background & context
 `ConnectorService` (`ios/Mango/Services/Content/ConnectorService.swift`) is the
@@ -122,7 +122,7 @@ break those, and the AI roadmap is `Roadmap → Milestone → Lesson`
 **Non-functional**
 - **NFR-perf:** parsing a typical 1–3 MB novel completes in < 2 s on an iPhone 12-class
   device; the main thread is never blocked (FR routed through the shared background
-  pipeline — see feature-pdf-background-parsing.md). Memory stays bounded by extracting
+  pipeline — see 0017-pdf-background-parsing.md). Memory stays bounded by extracting
   one spire item at a time rather than inflating the whole archive at once.
 - **NFR-security:** the parser treats the file as **untrusted input** — bounds-check
   every offset/length read from the central directory, cap per-entry inflated size
@@ -220,7 +220,7 @@ Xcode 16 file-system-synchronized groups — **do not** edit `project.pbxproj`):
       `MiniZipError.tooLarge` and does not exhaust memory. *(→ MiniZipTests)*
 - [ ] `AddBookView` offers an **EPUB** source and the file importer accepts `.epub`;
       importing a large EPUB keeps the UI responsive and is cancellable. *(→ manual +
-      shared pipeline check in feature-pdf-background-parsing.md)*
+      shared pipeline check in 0017-pdf-background-parsing.md)*
 - [ ] App still builds by opening `ios/Mango.xcodeproj` with **no** package resolution
       (no SPM/CocoaPods added). *(→ manual / ios-ci)*
 
@@ -269,7 +269,7 @@ Xcode 16 file-system-synchronized groups — **do not** edit `project.pbxproj`):
   caps, bounds-checked header reads, traversal-name rejection, external-entities-off XML
   (see NFR-security).
 - **Risk — large EPUB main-thread hitch** (same failure mode as PDF). *Mitigation:* depend
-  on and land **feature-pdf-background-parsing.md** first / together; EPUB reuses that
+  on and land **0017-pdf-background-parsing.md** first / together; EPUB reuses that
   background executor, progress, and cancellation.
 - **Decision needed — build vs. invariant (recommend A).**
   - **Option A (recommended):** implement the minimal `Compression`-based reader; keeps the
@@ -297,7 +297,7 @@ Xcode 16 file-system-synchronized groups — **do not** edit `project.pbxproj`):
    persist chapters in `AddBookView.finish`.
 6. **(S)** Reader: optional chapter jump list (or defer to a follow-up if reader work is
    out of scope) — minimally surface chapter titles.
-7. **(M)** Integrate with the shared background pipeline (feature-pdf-background-parsing.md):
+7. **(M)** Integrate with the shared background pipeline (0017-pdf-background-parsing.md):
    progress, cancellation, large-file streaming.
 8. **(S)** `AppSettings.epubImportEnabled` flag + dark-launch wiring.
 9. **(S)** Manual corpus test + VoiceOver/Reduce-Motion pass; docs note in import help text.
@@ -310,5 +310,5 @@ _Rough total: ~1 L + 4 M + 4 S._
 - `ios/Mango/Models/Book.swift`, `ios/Mango/Models/Enums.swift`, `RoadmapModels.swift`
 - `ios/Mango/Services/Networking/DTOs.swift` (`ParsedBook`)
 - `docs/PRODUCT_ROADMAP.md` (item #5), `CLAUDE.md` (no-third-party-deps invariant)
-- `working/feature-pdf-background-parsing.md` (shared background pipeline)
+- `working/0017-pdf-background-parsing.md` (shared background pipeline)
 - EPUB OCF/Packages spec (W3C/IDPF); Apple Compression framework (`compression_stream`).

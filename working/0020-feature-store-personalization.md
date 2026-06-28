@@ -398,5 +398,5 @@ events lake (S3/Glue)  ──Athena (daily, EventBridge)──► features_batch
   [`../docs/DATA_MODEL.md`](../docs/DATA_MODEL.md),
   [`0006-data-lake.md`](../docs/specs/0006-data-lake.md),
   [`SPEC_TEMPLATE.md`](../docs/specs/SPEC_TEMPLATE.md).
-- Sibling specs: `feature-analytics-events-ios.md` (the producer of the events this
-  consumes), `feature-app-store-prep.md` (privacy labels covering this data).
+- Sibling specs: `0015-analytics-events-ios.md` (the producer of the events this
+  consumes), `0022-app-store-prep.md` (privacy labels covering this data).

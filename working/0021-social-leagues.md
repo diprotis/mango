@@ -12,7 +12,7 @@ backend access patterns, endpoints, and **anti-cheat** — clients can never sel
 arbitrary XP. Everything is **opt-in**, ships a **non-competitive mode**, and has **no public
 shaming** (demotion is private and gentle), per `docs/GAMIFICATION.md` §2h and the roadmap's
 ethical guardrails. It builds on Cognito sign-in (spec 0003) and Progress Sync (Epic M5,
-`working/feature-progress-sync.md`), and is phased **friends → leagues → buddies**.
+`working/0014-progress-sync.md`), and is phased **friends → leagues → buddies**.
 
 ## 2. Goals / Non-goals
 - **Goals:**
@@ -317,4 +317,4 @@ safety: block → drop friendship + hide both ways;  report → REPORT# item for
 - `shared/api/openapi.yaml` (extend); `ios/Mango/Models/Enums.swift` (`ExerciseKind.baseXP`
   ceilings); `ios/Mango/Services/Auth/AuthService.swift`.
 - Depends on `docs/specs/0003-authentication.md` (sign-in) and
-  `working/feature-progress-sync.md` (Epic M5 — ledger-backed trustworthy XP).
+  `working/0014-progress-sync.md` (Epic M5 — ledger-backed trustworthy XP).

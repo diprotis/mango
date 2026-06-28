@@ -407,21 +407,26 @@ RootView
 - [ ] `RootView` still gates on `hasOnboarded`; no double sign-in prompt. (Integration)
 
 ## 8. Test plan
-**Pure / unit (preferred — fast, offline; `MangoTests`):**
-- **Page model**: ordered pages enum/array — count is 4–6; `next`/`prev` indices clamp at
-  bounds; `isLast` correct. (FR-1)
-- **`Motion.resolved(_,reduceMotion:)`**: returns `nil` when reduce-motion, the animation
-  otherwise. (FR-10)
-- **Daily-goal logic**: choosing a `ReadingLevel` seeds `dailyGoalUnits =
-  suggestedDailyUnits`, and an explicit stepper change is preserved through `finish()`
-  (no level-driven overwrite). (FR-5)
-- **Idempotent finish**: with an existing `UserProfile`, `finish()` updates in place
-  (count stays 1), sets `hasOnboarded`, and the reminder is cleared-then-scheduled exactly
-  once on re-entry. (FR-8) — test against an in-memory `ModelContainer`
-  (`MangoModelContainer.preview()`), `NotificationService` faked/spied.
-- **Notification priming branch**: Enable → `requestAuthorization` called + schedule +
-  `reminderEnabled = true`; Maybe-later → neither called; OS-deny → flow still completes &
-  time persisted. (FR-6) — via a `NotificationService` test double.
+**Pure / unit (preferred — fast, offline; `MangoTests`, mirroring `LevelCurveTests` style):**
+- `OnboardingPageTests` (FR-1): `testPageCountWithinBudget` (`OnboardingPage.allCases.count` in
+  4...6); `testNextClampsAtLast` / `testPrevClampsAtFirst`; `testIsLast`.
+- `MotionTests` (FR-10): `testResolvedNilWhenReduceMotion` (`Motion.resolved(.dissolve,
+  reduceMotion: true) == nil`); `testResolvedReturnsAnimationOtherwise` (non-nil when `false`).
+- `OnboardingFinishTests` (against an in-memory container, `isStoredInMemoryOnly: true`, with a
+  `NotificationService` test double — note today's `NotificationService` is a `final class`, so make
+  the call sites injectable or wrap in a small protocol for the spy):
+  - `testDailyGoalIndependentOfLevel` (FR-5): selecting `.casual` seeds `dailyGoal = 1`, then an
+    explicit stepper bump to 3 is **preserved** through `finish()` (asserts
+    `profile.dailyGoalUnits == 3`, not `suggestedDailyUnits`).
+  - `testIdempotentUpsert` (FR-8): with a pre-existing `UserProfile`, running `finish()` twice keeps
+    the profile **count at 1**, sets `hasOnboarded == true`, and schedules the reminder **exactly
+    once** per run (spy asserts one `cancelDailyReminder` + one `scheduleDailyReminder`).
+  - `testPrimingEnableRequestsAndSchedules` (FR-6): Enable path → `requestAuthorization` called +
+    `scheduleDailyReminder` called + `settings.reminderEnabled == true`.
+  - `testPrimingMaybeLaterSkipsPrompt` (FR-6): Maybe-later → neither `requestAuthorization` nor
+    `scheduleDailyReminder` called; flow still completes (`hasOnboarded == true`).
+  - `testPrimingOSDenyStillCompletes` (FR-6): authorize returns `false` → no schedule, but
+    `reminderHour/Minute` persisted so Settings can re-request later; `hasOnboarded == true`.
 
 **UI / manual (XCUITest where automatable, else checklist):**
 - Swipe through all pages; verify dots, footer sync, and that **buttons alone** also

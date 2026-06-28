@@ -10,7 +10,7 @@ is exactly the kind of stutter that costs activation on first run. This spec mov
 text extraction onto a **dedicated background executor** with progress reporting,
 cooperative cancellation, and a single `@MainActor` hop to publish results into SwiftData
 — and generalizes that machinery into a small, reusable **background import pipeline** so
-**EPUB import** (feature-epub-import.md) rides the same path. The correctness crux is
+**EPUB import** (0018-epub-import.md) rides the same path. The correctness crux is
 Swift concurrency: `PDFDocument`/`PDFPage` are **not thread-safe**, so the document must
 be confined to one background executor, with only `Sendable` values crossing actor
 boundaries. Acceptance: importing a large PDF keeps the UI responsive by a measurable
@@ -70,7 +70,7 @@ ProgressView, and `ParsedBook` is already `Sendable` (`DTOs.swift`).
 
 This is **Roadmap item #6** ("Offload PDF parsing off the main thread … Moving parsing to
 a background context keeps import smooth and protects the first-run experience"). It also
-unblocks/derisks **feature-epub-import.md**, whose large-file handling is explicitly
+unblocks/derisks **0018-epub-import.md**, whose large-file handling is explicitly
 delegated here. Constraints from CLAUDE.md: SwiftUI + SwiftData, iOS 17+, the single
 `@Observable AppModel`, DesignSystem tokens, and **no third-party deps** (all of this uses
 first-party Swift Concurrency + PDFKit).
@@ -134,7 +134,7 @@ first-party Swift Concurrency + PDFKit).
 **API / contract**
 - No backend/openapi change. `ParsedBook` unchanged. The only signature change is
   `ConnectorService.importPDF` becoming `async` with an optional progress closure (and the
-  matching EPUB API from feature-epub-import.md gaining the same).
+  matching EPUB API from 0018-epub-import.md gaining the same).
 
 **Concurrency model**
 - Introduce a dedicated executor that **owns** the PDFKit work:
@@ -217,7 +217,7 @@ AddBookView.finish(with:)  ──▶  ModelContext.insert/save (main actor)
       output (no regression in content). *(→ ConnectorServicePDFTests golden compare)*
 - [ ] Builds clean under strict/"complete" concurrency checking with no `Sendable`
       warnings touching `PDFDocument`/`PDFPage`. *(→ ios-ci build flag)*
-- [ ] EPUB import (feature-epub-import.md) uses the same `ContentImportPipeline` for its
+- [ ] EPUB import (0018-epub-import.md) uses the same `ContentImportPipeline` for its
       large-file path. *(→ code review / shared-type usage)*
 - [ ] Image-only PDF still throws `ConnectorError.pdfUnreadable`. *(→ unit test)*
 
@@ -295,7 +295,7 @@ responsiveness, VoiceOver/Reduce-Motion passes.
    files) in CI; fix any `Sendable` findings.
 7. **(S)** `AppSettings.backgroundImportEnabled` flag + fallback wiring.
 8. **(S)** Generalize for EPUB: expose a generic `run(...)`/`parse(...)` entry the EPUB
-   importer calls (coordinate with feature-epub-import.md).
+   importer calls (coordinate with 0018-epub-import.md).
 9. **(S)** Instruments pass (Time Profiler/Allocations/Hangs) on a large PDF; record the
    responsiveness measurement.
 
@@ -306,6 +306,6 @@ _Rough total: ~2 M + 6 S._
 - `ios/Mango/Features/Library/AddBookView.swift` (`handlePDF`, `finish`)
 - `ios/Mango/Services/Networking/DTOs.swift` (`ParsedBook: Sendable`)
 - `docs/PRODUCT_ROADMAP.md` (item #6), `CLAUDE.md` (concurrency / no-deps / SwiftData)
-- `working/feature-epub-import.md` (shares this pipeline)
+- `working/0018-epub-import.md` (shares this pipeline)
 - Apple PDFKit (`PDFDocument` thread-safety), Swift Concurrency (`actor`, `Task`,
   `Sendable`, `AsyncStream`, `Task.checkCancellation`).
