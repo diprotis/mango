@@ -64,6 +64,16 @@ import · `0020` personalization · `0021` social leagues · `0024` rewards (dig
 first; trips/sweepstakes are a flag-gated, legally-reviewed later phase) · `0022`
 App Store prep.
 
+## Proposed next specs — under review
+
+See [`ARCHITECTURE_REVIEW.md`](ARCHITECTURE_REVIEW.md) — a gap analysis of the whole
+plan (your three data/S3/catalog concerns + a cross-cutting architecture sweep)
+proposing specs **0026–0037** (server-side tracking, generation artifact store +
+observability, shared per-book catalog cache, rate-limiting, AI safety/Guardrails,
+COPPA age-gating, observability+cost, data export, admin console, …) plus promoting
+**0019** to ship the sign-in client. Not yet drafted — awaiting your pick of which
+to write.
+
 ## Status & conventions
 
 All 18 specs are **Draft**, dated 2026-06-28, reviewers **Principal/SD/QA**
