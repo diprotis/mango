@@ -1,4 +1,4 @@
-# Progress Sync — gamification state across reinstalls & devices
+# 0014 — Progress Sync — gamification state across reinstalls & devices
 
 - **Epic:** M5 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA

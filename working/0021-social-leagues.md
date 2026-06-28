@@ -1,4 +1,4 @@
-# Social Leagues — weekly XP leagues, friends & reading buddies
+# 0021 — Social Leagues — weekly XP leagues, friends & buddies
 
 - **Epic:** M8 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA

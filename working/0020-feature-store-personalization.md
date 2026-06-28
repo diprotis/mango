@@ -1,4 +1,4 @@
-# NNNN — Feature store: population + personalization
+# 0020 — Feature store — population + personalization
 
 - **Epic:** M9 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA

@@ -1,4 +1,4 @@
-# EPUB import — bring-your-own-library connector
+# 0018 — EPUB import — bring-your-own-library connector
 
 - **Epic:** M7 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA
@@ -14,6 +14,22 @@ is the same normalized `ParsedBook` every other connector produces, plus lightwe
 chapter metadata, so the existing import → roadmap → reader pipeline is unchanged
 downstream. Acceptance: a known public-domain EPUB imports into a readable `Book` with
 correctly ordered chapters and carried-over title/author.
+
+## Pivot impact (see 0008)
+Post-pivot, Mango is **not a reading app** and the in-app Reader is **removed** (`0008` FR-1): an
+imported EPUB is parsed **only to feed activity/journey generation** (quizzes, reflections,
+application tasks) — Mango does **not** present the EPUB as an in-app reading experience. The
+connector work here is otherwise unchanged: EPUB still normalizes to the same `ParsedBook.fullText`
+(plus chapter metadata) that `RoadmapGenerator`/activity generation consume. Adjust expectations on
+two points:
+- Wherever this spec says "readable `Book`"/"the reader," read it as **"usable as activity-generation
+  input"**; the extracted text correctness, ordering, and metadata requirements are unchanged and
+  still fully apply. The **`BookChapter`** model stays valuable — it gives activity generation better
+  structure/segmentation even without a reader UI.
+- FR-6's "reader can use chapters for a jump list" and Task 6's "reader chapter jump list" become
+  **out of scope** under the pivot (no reader to host them); keep the **chapter index data** (it aids
+  roadmap segmentation) but drop the reader-UI affordance. The ZIP/OPF/text-extraction core and the
+  shared background pipeline (`0017`) are unaffected.
 
 ## 2. Goals / Non-goals
 - **Goals:**

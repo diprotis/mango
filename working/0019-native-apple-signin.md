@@ -1,4 +1,4 @@
-# Native Sign in with Apple
+# 0019 — Native Sign in with Apple
 
 - **Epic:** M3 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA

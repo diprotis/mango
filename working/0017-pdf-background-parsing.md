@@ -1,4 +1,4 @@
-# Background content parsing — move PDF (and EPUB) import off the main thread
+# 0017 — Background content parsing — move PDF/EPUB import off the main thread
 
 - **Epic:** M7 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA
@@ -15,6 +15,19 @@ Swift concurrency: `PDFDocument`/`PDFPage` are **not thread-safe**, so the docum
 be confined to one background executor, with only `Sendable` values crossing actor
 boundaries. Acceptance: importing a large PDF keeps the UI responsive by a measurable
 bar and is cancellable.
+
+## Pivot impact (see 0008)
+Post-pivot, Mango is **not a reading app** and the in-app Reader is **removed** (`0008` FR-1):
+imported content is now ingested **solely to generate the activity/journey loop** (quizzes,
+reflections, application tasks), **not** to be read inside Mango. This does **not** change the work
+here — PDF text extraction still produces the same `ParsedBook.fullText`, which now feeds
+`RoadmapGenerator`/activity generation rather than a reader view. Two consequences to keep in mind
+during implementation:
+- References below to a "reader"/"smooth reading" are about **import responsiveness and downstream
+  activity generation**, not an in-app reading surface. The `lastReadOffset`/`readProgress` reader
+  cursors are out of scope for this spec and may be vestigial after `0008`.
+- The threading/progress/cancellation pipeline (`ContentImportPipeline`) is unchanged and remains the
+  shared path `0018` (EPUB) reuses. Everything else in this spec stands as written.
 
 ## 2. Goals / Non-goals
 - **Goals:**

@@ -1,4 +1,4 @@
-# NNNN — App Store submission readiness
+# 0022 — App Store submission readiness
 
 - **Epic:** M10 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
 - **Reviewers:** Principal, SD, QA
