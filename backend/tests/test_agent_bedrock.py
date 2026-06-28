@@ -95,7 +95,7 @@ def test_max_effort_uses_adaptive_thinking(monkeypatch):
 
     body = json.loads(fake.calls[0]["body"])
     assert body["thinking"] == {"type": "adaptive"}
-    assert body["output_config"] == {"effort": "high"}
+    assert body["output_config"] == {"effort": "medium"}
     assert "temperature" not in body
 
 

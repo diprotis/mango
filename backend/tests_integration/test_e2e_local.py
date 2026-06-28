@@ -27,6 +27,7 @@ from handlers import (
     profile,
     progress,
     reflections,
+    roadmap_status,
 )
 from shared import agent
 from shared.catalog_data import DUMMY_BOOK_ID
@@ -114,8 +115,10 @@ def test_full_user_journey_persists_end_to_end(aws, monkeypatch):
     assert isinstance(book_text, str) and len(book_text) > 50
 
     # ---- (b) Generate a roadmap from the inline text (Bedrock monkeypatched) ----
+    # Async: POST returns 202 + jobId; with no worker configured it completes
+    # inline, so the immediate poll returns the roadmap.
     monkeypatch.setattr(agent, "generate_roadmap", lambda *a, **k: dict(_CANNED_ROADMAP))
-    status, roadmap = _call(
+    status, enqueued = _call(
         generate_roadmap,
         "POST",
         body={
@@ -123,7 +126,12 @@ def test_full_user_journey_persists_end_to_end(aws, monkeypatch):
             "profile": {},
         },
     )
+    assert status == 202
+    job_id = enqueued["jobId"]
+    status, job = _call(roadmap_status, "GET", path_params={"jobId": job_id})
     assert status == 200
+    assert job["status"] == "complete"
+    roadmap = job["roadmap"]
     assert roadmap["title"] == _CANNED_ROADMAP["title"]
     assert roadmap["milestones"][0]["lessons"][0]["exercises"][0]["xp"] == 25
 

@@ -61,8 +61,17 @@ class ApiStack(Stack):
 
         health_fn = make_fn("HealthFn", "handlers.health.handler", timeout=10, memory=128)
         parse_fn = make_fn("ContentParseFn", "handlers.content_parse.handler", timeout=30)
+        # Roadmap generation is async: the API handler enqueues + returns 202 fast
+        # (well under the API Gateway 30s cap); the worker does the slow Bedrock
+        # call off the request path (its own 60s budget); status_fn serves polls.
         roadmap_fn = make_fn(
-            "RoadmapFn", "handlers.generate_roadmap.handler", timeout=60, memory=512
+            "RoadmapFn", "handlers.generate_roadmap.handler", timeout=30, memory=512
+        )
+        roadmap_worker_fn = make_fn(
+            "RoadmapWorkerFn", "handlers.roadmap_worker.handler", timeout=60, memory=512
+        )
+        roadmap_status_fn = make_fn(
+            "RoadmapStatusFn", "handlers.roadmap_status.handler", timeout=15
         )
         grade_fn = make_fn("GradeFn", "handlers.grade_exercise.handler", timeout=60, memory=384)
         progress_fn = make_fn("ProgressFn", "handlers.progress.handler", timeout=15)
@@ -77,6 +86,8 @@ class ApiStack(Stack):
         for fn in (
             parse_fn,
             roadmap_fn,
+            roadmap_worker_fn,
+            roadmap_status_fn,
             progress_fn,
             profile_fn,
             library_fn,
@@ -85,8 +96,16 @@ class ApiStack(Stack):
         ):
             table.grant_read_write_data(fn)
         bucket.grant_read_write(parse_fn)
-        bucket.grant_read(roadmap_fn)
+        bucket.grant_read(roadmap_fn)  # POST may load a stored book's text from S3
+        bucket.grant_read(roadmap_worker_fn)
         bucket.grant_read_write(delete_fn)  # enumerates + deletes users/<sub>/ objects
+
+        # The POST handler async-invokes the worker; give it just that permission
+        # and tell it the worker's name. roadmap_status only reads job rows (table).
+        roadmap_fn.add_environment(
+            "ROADMAP_WORKER_FUNCTION", roadmap_worker_fn.function_name
+        )
+        roadmap_worker_fn.grant_invoke(roadmap_fn)
 
         # Backend AI runs on Amazon Bedrock (IAM auth, no API key). Only the
         # generate/grade Lambdas may invoke models.
@@ -97,7 +116,8 @@ class ApiStack(Stack):
                 "arn:aws:bedrock:*:*:inference-profile/*",
             ],
         )
-        roadmap_fn.add_to_role_policy(bedrock_policy)
+        # The worker (not the API-facing POST) makes the roadmap Bedrock call.
+        roadmap_worker_fn.add_to_role_policy(bedrock_policy)
         grade_fn.add_to_role_policy(bedrock_policy)
 
         # The events Lambda may write only to the analytics Firehose stream.
@@ -154,6 +174,7 @@ class ApiStack(Stack):
         route("/health", apigw.HttpMethod.GET, health_fn, secured=False)
         route("/v1/content/parse", apigw.HttpMethod.POST, parse_fn)
         route("/v1/roadmaps/generate", apigw.HttpMethod.POST, roadmap_fn)
+        route("/v1/roadmaps/jobs/{jobId}", apigw.HttpMethod.GET, roadmap_status_fn)
         route("/v1/exercises/grade", apigw.HttpMethod.POST, grade_fn)
         route("/v1/me/progress", apigw.HttpMethod.GET, progress_fn)
         route("/v1/me/progress", apigw.HttpMethod.PUT, progress_fn)

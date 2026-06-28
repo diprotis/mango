@@ -51,12 +51,15 @@ def _invoke(system: str, user: str, max_tokens: int = 1500) -> str:
 
     def _with_thinking() -> dict:
         # Adaptive extended thinking: the model manages its own thinking budget
-        # via ``output_config.effort``. Give the visible answer extra headroom so
-        # the JSON body isn't truncated by the thinking tokens.
+        # via ``output_config.effort``. Extended thinking shares the max_tokens
+        # budget, so add headroom for the thinking tokens on top of the visible
+        # answer or the JSON body gets truncated. Effort is "medium": the roadmap
+        # is a well-specified JSON task, and the API Gateway integration caps the
+        # synchronous call at 30s, so we trade a little depth for latency margin.
         body = dict(base)
-        body["max_tokens"] = max(max_tokens, 2500) + 4096
+        body["max_tokens"] = max_tokens + 4096
         body["thinking"] = {"type": "adaptive"}
-        body["output_config"] = {"effort": "high"}
+        body["output_config"] = {"effort": "medium"}
         return body
 
     def _call(body: dict) -> str:
@@ -90,10 +93,13 @@ def extract_json(text: str) -> dict:
 
 
 def generate_roadmap(book: dict, profile: dict, excerpt_text: str) -> dict:
+    # A focused 3×2×2 journey fits comfortably in ~1500 visible tokens; capping
+    # output here is the main lever that keeps the synchronous call under the
+    # API Gateway 30s integration timeout (generation time scales with output).
     out = _invoke(
         prompts.roadmap_system(),
         prompts.roadmap_user(book, profile, excerpt_text),
-        max_tokens=2500,
+        max_tokens=1600,
     )
     return extract_json(out)
 

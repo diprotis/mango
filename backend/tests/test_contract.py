@@ -1,6 +1,6 @@
 import json
 
-from handlers import generate_roadmap, progress
+from handlers import generate_roadmap, progress, roadmap_status
 from shared import agent
 
 _FAKE = {
@@ -39,8 +39,9 @@ def _event(method, body=None, headers=None):
     }
 
 
-def test_roadmap_accepts_inline_book(monkeypatch):
-    # The iOS app sends inline book text, not a bookId.
+def test_roadmap_accepts_inline_book(aws, monkeypatch):
+    # The iOS app sends inline book text, not a bookId. Generation is async:
+    # POST → 202 + jobId, then poll the job for the completed roadmap.
     monkeypatch.setattr(agent, "generate_roadmap", lambda *a, **k: dict(_FAKE))
     resp = generate_roadmap.handler(
         {
@@ -53,9 +54,14 @@ def test_roadmap_accepts_inline_book(monkeypatch):
         },
         None,
     )
-    assert resp["statusCode"] == 200
-    body = json.loads(resp["body"])
-    assert body["milestones"][0]["lessons"][0]["exercises"][0]["xp"] == 25
+    assert resp["statusCode"] == 202
+    job_id = json.loads(resp["body"])["jobId"]
+
+    poll = roadmap_status.handler({"pathParameters": {"jobId": job_id}, "headers": {}}, None)
+    assert poll["statusCode"] == 200
+    job = json.loads(poll["body"])
+    assert job["status"] == "complete"
+    assert job["roadmap"]["milestones"][0]["lessons"][0]["exercises"][0]["xp"] == 25
 
 
 def test_progress_requires_auth_in_prod(monkeypatch):
