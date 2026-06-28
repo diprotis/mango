@@ -102,17 +102,17 @@ struct TodayView: View {
                     }
                     .buttonStyle(.mangoPrimary)
                 } else if book.roadmap == nil {
-                    NavigationLink(value: Route.reader(book)) {
-                        Label("Open reader", systemImage: "book")
+                    NavigationLink(value: Route.bookDetail(book)) {
+                        Label("Build my journey", systemImage: "wand.and.stars")
                     }
                     .buttonStyle(.mangoPrimary)
                 } else {
                     Text("You've finished every lesson here. 🌱").font(.subheadline).foregroundStyle(Palette.success)
                 }
-                NavigationLink(value: Route.reader(book)) {
-                    Text("Read the book")
-                }
-                .buttonStyle(.mangoSecondary)
+                Label("Read this book on your own — Mango coaches the practice.", systemImage: "book.closed")
+                    .font(.footnote)
+                    .foregroundStyle(Palette.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

@@ -3,7 +3,6 @@ import SwiftUI
 /// Type-safe navigation routes shared by every tab's NavigationStack.
 enum Route: Hashable {
     case bookDetail(Book)
-    case reader(Book)
     case journey(Book)
     case lesson(Lesson)
 }
@@ -13,7 +12,6 @@ private struct MangoDestinations: ViewModifier {
         content.navigationDestination(for: Route.self) { route in
             switch route {
             case let .bookDetail(book): BookDetailView(book: book)
-            case let .reader(book): ReaderView(book: book)
             case let .journey(book): JourneyView(book: book)
             case let .lesson(lesson): LessonView(lesson: lesson)
             }

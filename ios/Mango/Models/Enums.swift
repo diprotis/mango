@@ -84,3 +84,36 @@ enum ExerciseKind: String, CaseIterable, Codable, Identifiable {
 enum LessonStatus {
     case locked, available, completed
 }
+
+/// The user-controlled lifecycle of a Book's journey: `notStarted → reading →
+/// finished`. Set manually by the user — **never** inferred from any in-app
+/// reading signal (Mango has no in-app reader). Orthogonal to activity progress:
+/// a book can be `finished` with activities incomplete, or `reading` with all done.
+enum JourneyState: String, CaseIterable, Codable, Identifiable {
+    case notStarted, reading, finished
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .notStarted: return "Not started"
+        case .reading: return "Reading"
+        case .finished: return "Finished"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .notStarted: return "bookmark"
+        case .reading: return "book"
+        case .finished: return "checkmark.seal.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .notStarted: return Palette.textTertiary
+        case .reading: return Palette.accent
+        case .finished: return Palette.success
+        }
+    }
+}

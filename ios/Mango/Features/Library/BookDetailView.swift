@@ -90,10 +90,10 @@ struct BookDetailView: View {
             .disabled(isGenerating)
         }
 
-        NavigationLink(value: Route.reader(book)) {
-            Label("Read the book", systemImage: "book")
-        }
-        .buttonStyle(.mangoSecondary)
+        Label("Read this book on your own (Kindle, print, or library) — Mango is your activity coach, not a reader.", systemImage: "book.closed")
+            .font(.footnote)
+            .foregroundStyle(Palette.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
         if !book.isActive {
             Button { makeActive() } label: {

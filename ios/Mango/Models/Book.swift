@@ -10,6 +10,9 @@ final class Book {
     var wordCount: Int
     var estimatedMinutes: Int
     var excerpt: String
+    /// Non-displayed generation cache: the ingested book text used only to ground
+    /// AI roadmap/lesson generation (≤12k-char excerpt is sent to the model). Mango
+    /// is not a reader — this is **never** rendered to the user. See ADR-0001.
     var fullText: String
 
     var sourceKindRaw: String
@@ -18,10 +21,8 @@ final class Book {
     var addedAt: Date
     var isActive: Bool
 
-    /// Fraction of the text read, 0...1.
-    var readProgress: Double
-    /// Character offset for resume.
-    var lastReadOffset: Int
+    /// The user-controlled journey lifecycle, stored as a raw string (see `journeyState`).
+    var journeyStateRaw: String = JourneyState.notStarted.rawValue
 
     @Relationship(deleteRule: .cascade, inverse: \Roadmap.book)
     var roadmap: Roadmap?
@@ -51,14 +52,18 @@ final class Book {
         self.sourceValue = sourceValue
         self.addedAt = .now
         self.isActive = isActive
-        self.readProgress = 0
-        self.lastReadOffset = 0
+        self.journeyStateRaw = JourneyState.notStarted.rawValue
         self.roadmap = nil
     }
 
     var sourceKind: BookSourceKind {
         get { BookSourceKind(rawValue: sourceKindRaw) ?? .text }
         set { sourceKindRaw = newValue.rawValue }
+    }
+
+    var journeyState: JourneyState {
+        get { JourneyState(rawValue: journeyStateRaw) ?? .notStarted }
+        set { journeyStateRaw = newValue.rawValue }
     }
 
     var hasRoadmap: Bool { roadmap != nil }
