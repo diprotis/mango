@@ -42,6 +42,11 @@ _ROADMAP_JSON = json.dumps(
                         "title": "The 1% rule",
                         "readingSummary": "Small gains compound.",
                         "estimatedMinutes": 5,
+                        "reading": {
+                            "locator": "Chapter 1: The Surprising Power of Tiny Habits",
+                            "anchorQuote": "The aggregation of marginal gains.",
+                            "whatToNoticeWhileReading": "Notice how 1% changes compound.",
+                        },
                         "exercises": [
                             {
                                 "kind": "reflection",
@@ -82,7 +87,11 @@ def test_generate_roadmap_parses_bedrock_payload(monkeypatch):
     result = agent.generate_roadmap({"title": "X"}, {}, "excerpt")
 
     assert result["title"] == "Build Better Habits"
-    assert result["milestones"][0]["lessons"][0]["exercises"][0]["xp"] == 25
+    lesson = result["milestones"][0]["lessons"][0]
+    assert lesson["exercises"][0]["xp"] == 25
+    # The optional reading slice survives extract_json verbatim (no field whitelisting).
+    assert lesson["reading"]["anchorQuote"] == "The aggregation of marginal gains."
+    assert lesson["reading"]["locator"].startswith("Chapter 1")
 
 
 def test_max_effort_uses_adaptive_thinking(monkeypatch):

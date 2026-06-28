@@ -95,13 +95,15 @@ def extract_json(text: str) -> dict:
 
 
 def generate_roadmap(book: dict, profile: dict, excerpt_text: str) -> dict:
-    # A 4×2×2 journey (~2300 visible tokens, measured); 3000 leaves margin so the
-    # JSON completes naturally (stop_reason=end_turn) rather than truncating. Runs
-    # in the async worker (60s budget), generating in ~27s against real Bedrock.
+    # A 4×2×2 journey was ~2300 visible tokens; the per-lesson "reading" object
+    # (locator + anchorQuote + what-to-notice) adds a few hundred more, so 4000
+    # leaves margin for the JSON to complete naturally (stop_reason=end_turn)
+    # rather than truncating. Runs in the async worker (60s budget). Re-validate
+    # against real Bedrock if the grounding budget or lesson count changes.
     out = _invoke(
         prompts.roadmap_system(),
         prompts.roadmap_user(book, profile, excerpt_text),
-        max_tokens=3000,
+        max_tokens=4000,
     )
     return extract_json(out)
 

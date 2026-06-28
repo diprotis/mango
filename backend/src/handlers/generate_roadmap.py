@@ -15,6 +15,7 @@ and the job is created already-complete, so the same poll contract still holds.
 import json
 
 from shared import agent, roadmap_jobs
+from shared.prompts import GROUNDING_CHAR_BUDGET
 from shared.response import bad_request, json_response, not_found, parse_body, server_error, user_id
 from shared.storage import lambda_client
 
@@ -48,7 +49,7 @@ def handler(event, context):
     # No worker configured (local/offline): generate inline so the poll contract
     # still resolves. Bounded environments (tests) use fast/mocked generation.
     try:
-        roadmap = agent.generate_roadmap(book, profile, full_text[:12000])
+        roadmap = agent.generate_roadmap(book, profile, full_text[:GROUNDING_CHAR_BUDGET])
         if book_id:
             roadmap["bookId"] = book_id
         roadmap_jobs.mark_complete(uid, job_id, roadmap)

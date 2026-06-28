@@ -100,9 +100,106 @@ final class ReadingActivityTests: XCTestCase {
         let lessons = try XCTUnwrap(sample.roadmap?.allLessons)
         XCTAssertFalse(lessons.isEmpty)
         for lesson in lessons {
-            XCTAssertEqual(lesson.orderedExercises.first?.kind, .reading,
-                           "every sample lesson opens with a reading activity")
+            let reading = try XCTUnwrap(lesson.orderedExercises.first)
+            XCTAssertEqual(reading.kind, .reading, "every sample lesson opens with a reading activity")
+            // Honesty: each seeded anchor quote must literally appear in the book text,
+            // so "search for this in your copy" actually works.
+            let anchor = try XCTUnwrap(reading.anchorQuote, "sample reading has an anchor quote")
+            XCTAssertTrue(sample.fullText.contains(anchor),
+                          "anchor quote must be verbatim from the book: \(anchor)")
+            XCTAssertNotNil(reading.locator, "sample reading names a locator (Book II/IV/V)")
         }
+    }
+
+    // MARK: Builder threads the structured slice (and falls back without it)
+
+    func testBuilderUsesStructuredReadingWhenPresent() throws {
+        let context = try makeContext()
+        let dto = RoadmapDTO(
+            title: "T", summary: "S",
+            milestones: [
+                MilestoneDTO(title: "M1", subtitle: "", lessons: [
+                    LessonDTO(
+                        title: "Tiny Habits",
+                        readingSummary: "Small gains compound.",
+                        estimatedMinutes: 5,
+                        reading: ReadingSliceDTO(
+                            locator: "Chapter 1: The Power of Tiny Habits",
+                            anchorQuote: "The aggregation of marginal gains.",
+                            whatToNoticeWhileReading: "Notice how 1% changes compound."
+                        ),
+                        exercises: [ExerciseDTO(kind: "quiz", prompt: "Q?", options: ["a", "b"], answerIndex: 0, xp: 15)]
+                    ),
+                ]),
+            ]
+        )
+        let book = Book(id: "b3", title: "Book")
+        context.insert(book)
+        RoadmapBuilder.attach(dto, to: book, in: context)
+
+        let reading = try XCTUnwrap(book.roadmap?.allLessons.first?.orderedExercises.first)
+        XCTAssertEqual(reading.kind, .reading)
+        XCTAssertEqual(reading.locator, "Chapter 1: The Power of Tiny Habits")
+        XCTAssertEqual(reading.anchorQuote, "The aggregation of marginal gains.")
+        XCTAssertEqual(reading.whatToNotice, "Notice how 1% changes compound.")
+        XCTAssertTrue(reading.prompt.contains("Chapter 1"), "prompt headline names the locator")
+    }
+
+    func testBuilderFallsBackWhenReadingAbsent() throws {
+        let context = try makeContext()
+        let dto = RoadmapDTO(
+            title: "T", summary: "S",
+            milestones: [
+                MilestoneDTO(title: "M1", subtitle: "", lessons: [
+                    // No `reading` (defaults to nil) → fallback path.
+                    LessonDTO(title: "L1", readingSummary: "Read about control.", estimatedMinutes: 4, exercises: [
+                        ExerciseDTO(kind: "quiz", prompt: "Q?", options: ["a", "b"], answerIndex: 0, xp: 15),
+                    ]),
+                ]),
+            ]
+        )
+        let book = Book(id: "b4", title: "Book")
+        context.insert(book)
+        RoadmapBuilder.attach(dto, to: book, in: context)
+
+        let reading = try XCTUnwrap(book.roadmap?.allLessons.first?.orderedExercises.first)
+        XCTAssertEqual(reading.kind, .reading)
+        XCTAssertNil(reading.locator, "fallback leaves structured fields nil")
+        XCTAssertNil(reading.anchorQuote)
+        XCTAssertTrue(reading.prompt.contains("Read about control."), "fallback prompt carries the summary")
+    }
+
+    // MARK: Lenient decode of the reading slice
+
+    func testRoadmapDecodesWithReadingSlice() throws {
+        let json = """
+        { "title": "T", "summary": "S", "milestones": [
+          { "title": "M", "subtitle": "s", "lessons": [
+            { "title": "L", "readingSummary": "r", "estimatedMinutes": 5,
+              "reading": { "locator": "Book II", "anchorQuote": "Begin the morning…",
+                           "whatToNoticeWhileReading": "Watch X." },
+              "exercises": [ { "kind": "quiz", "prompt": "?", "options": ["a","b"], "answerIndex": 1, "xp": 15 } ] }
+          ]}
+        ]}
+        """
+        let dto = try RoadmapDTO.decodeLoosely(from: json)
+        let reading = try XCTUnwrap(dto.milestones[0].lessons[0].reading)
+        XCTAssertEqual(reading.locator, "Book II")
+        XCTAssertEqual(reading.anchorQuote, "Begin the morning…")
+    }
+
+    func testRoadmapDecodesWithoutReadingSlice() throws {
+        // A payload with no `reading` key must decode (optional → nil), not throw.
+        let json = """
+        { "title": "T", "summary": "S", "milestones": [
+          { "title": "M", "subtitle": "s", "lessons": [
+            { "title": "L", "readingSummary": "r", "estimatedMinutes": 5,
+              "exercises": [ { "kind": "quiz", "prompt": "?", "options": ["a","b"], "answerIndex": 1, "xp": 15 } ] }
+          ]}
+        ]}
+        """
+        let dto = try RoadmapDTO.decodeLoosely(from: json)
+        XCTAssertNil(dto.milestones[0].lessons[0].reading)
     }
 
     // MARK: Gamification awards reading XP without a kind-specific badge

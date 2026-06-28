@@ -100,6 +100,13 @@ final class Exercise {
     var xp: Int
     var order: Int
 
+    // Structured reading-slice fields (only set on `.reading` activities that carry a
+    // model-provided slice; nil → ExerciseRunnerView shows the simple read-on-your-own
+    // hint). Additive optionals → SwiftData lightweight migration, no plan needed.
+    var locator: String?
+    var anchorQuote: String?
+    var whatToNotice: String?
+
     // Response state
     var userAnswer: String?
     var chosenIndex: Int?
@@ -128,6 +135,9 @@ final class Exercise {
         self.completedAt = nil
         self.score = nil
         self.feedback = nil
+        self.locator = nil
+        self.anchorQuote = nil
+        self.whatToNotice = nil
     }
 
     var kind: ExerciseKind {

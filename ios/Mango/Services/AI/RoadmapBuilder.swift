@@ -47,24 +47,57 @@ enum RoadmapBuilder {
         context.insert(roadmap)
     }
 
-    /// Builds the leading reading activity for a lesson from its reading summary.
-    /// The prompt *instructs* what to read (Mango never shows the text — ADR-0001).
+    /// Builds the leading reading activity for a lesson, preferring the structured
+    /// `reading` slice (locator + anchor quote + what-to-notice) when the model
+    /// provided one, and falling back to the reading summary otherwise.
+    /// Mango never shows the book's text (ADR-0001) — this only *instructs*.
     static func makeReadingActivity(for lesson: LessonDTO) -> Exercise {
-        readingActivity(title: lesson.title, summary: lesson.readingSummary)
+        readingActivity(
+            title: lesson.title,
+            summary: lesson.readingSummary,
+            locator: lesson.reading?.locator,
+            anchorQuote: lesson.reading?.anchorQuote,
+            whatToNotice: lesson.reading?.whatToNoticeWhileReading
+        )
     }
 
     /// Shared reading-activity factory so generation (RoadmapBuilder) and the
-    /// bundled sample (SeedData) produce identical reading steps.
-    static func readingActivity(title: String, summary: String) -> Exercise {
+    /// bundled sample (SeedData) produce identical reading steps. When a `locator`
+    /// is present the prompt is a short headline ("Read: ‹locator›") and the
+    /// structured fields are stored for distinct rendering; otherwise it falls back
+    /// to the summary-based instruction (old roadmaps / model-omitted slices).
+    static func readingActivity(
+        title: String,
+        summary: String,
+        locator: String? = nil,
+        anchorQuote: String? = nil,
+        whatToNotice: String? = nil
+    ) -> Exercise {
+        let cleanLocator = locator?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanAnchor = anchorQuote?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanNotice = whatToNotice?.trimmingCharacters(in: .whitespacesAndNewlines)
         let cue = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-        let prompt = cue.isEmpty
-            ? "Read the section for “\(title)” in your own copy."
-            : "Read the section for “\(title)” in your own copy. \(cue)"
-        return Exercise(
+
+        let prompt: String
+        if let cleanLocator, !cleanLocator.isEmpty {
+            prompt = "Read: \(cleanLocator)"
+        } else if cue.isEmpty {
+            prompt = "Read the section for “\(title)” in your own copy."
+        } else {
+            prompt = "Read the section for “\(title)” in your own copy. \(cue)"
+        }
+
+        let exercise = Exercise(
             kind: .reading,
             prompt: prompt,
             xp: ExerciseKind.reading.baseXP,
             order: 0
         )
+        // Only set structured fields when non-empty, so the fallback path (no slice)
+        // leaves them nil and ExerciseRunnerView renders the simple hint.
+        exercise.locator = cleanLocator?.isEmpty == false ? cleanLocator : nil
+        exercise.anchorQuote = cleanAnchor?.isEmpty == false ? cleanAnchor : nil
+        exercise.whatToNotice = cleanNotice?.isEmpty == false ? cleanNotice : nil
+        return exercise
     }
 }

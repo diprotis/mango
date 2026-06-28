@@ -48,7 +48,19 @@ struct LessonDTO: Codable, Sendable {
     var title: String
     var readingSummary: String
     var estimatedMinutes: Int
+    /// Optional structured pointer to the slice to read for this lesson. Absent →
+    /// the client falls back to `readingSummary` when synthesizing the reading activity.
+    var reading: ReadingSliceDTO? = nil
     var exercises: [ExerciseDTO]
+}
+
+/// The slice of the book to read for a lesson — chapter/section for print readers,
+/// plus a verbatim opening quote searchable in Kindle. Never page numbers (the model
+/// can't see them; they vary by edition). All fields optional; decoded leniently.
+struct ReadingSliceDTO: Codable, Sendable {
+    var locator: String?
+    var anchorQuote: String?
+    var whatToNoticeWhileReading: String?
 }
 
 struct ExerciseDTO: Codable, Sendable {

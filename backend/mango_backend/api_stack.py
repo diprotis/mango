@@ -61,12 +61,16 @@ class ApiStack(Stack):
         parse_fn = make_fn("ContentParseFn", "handlers.content_parse.handler", timeout=30)
         # Roadmap generation is async: the API handler enqueues + returns 202 fast
         # (well under the API Gateway 30s cap); the worker does the slow Bedrock
-        # call off the request path (its own 60s budget); status_fn serves polls.
+        # call off the request path; status_fn serves polls.
         roadmap_fn = make_fn(
             "RoadmapFn", "handlers.generate_roadmap.handler", timeout=30, memory=512
         )
+        # Generation grounds on the full book (see GROUNDING_CHAR_BUDGET in prompts.py),
+        # so real Bedrock generation can run well past a minute. The worker is off the
+        # API Gateway request path (async, polled), so it gets a long-running budget
+        # (Lambda max is 900s); 300s leaves ample headroom for large books.
         roadmap_worker_fn = make_fn(
-            "RoadmapWorkerFn", "handlers.roadmap_worker.handler", timeout=60, memory=512
+            "RoadmapWorkerFn", "handlers.roadmap_worker.handler", timeout=300, memory=512
         )
         roadmap_status_fn = make_fn(
             "RoadmapStatusFn", "handlers.roadmap_status.handler", timeout=15

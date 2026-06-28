@@ -8,7 +8,15 @@ struct RemoteAIService: AIService {
     /// Gateway 30s limit): POST enqueues and returns 202 + a jobId, then we poll
     /// GET /v1/roadmaps/jobs/{jobId} until it completes or fails.
     private static let pollInterval: Duration = .seconds(2)
-    private static let maxPolls = 45  // ~90s ceiling; real generation is ~20-35s
+    // Full-book grounding makes real generation run longer (the worker Lambda has a
+    // 300s budget), so poll up to ~5 min to match rather than time out early.
+    private static let maxPolls = 150  // ~300s ceiling
+
+    /// How much book text to send for grounding the roadmap (and the reading-slice
+    /// locators/anchor quotes). We ground on the whole book; the only hard ceiling is
+    /// the model's context window. Keep in sync with the backend `GROUNDING_CHAR_BUDGET`
+    /// in `prompts.py`.
+    static let groundingCharBudget = 600_000
 
     func generateRoadmap(book: AIBookContext, profile: AIProfileContext) async throws -> RoadmapDTO {
         let request = RoadmapRequest(
@@ -16,7 +24,7 @@ struct RemoteAIService: AIService {
             book: InlineBook(
                 title: book.title,
                 author: book.author,
-                text: String(book.fullText.prefix(12000))
+                text: String(book.fullText.prefix(Self.groundingCharBudget))
             ),
             profile: profile.payload
         )

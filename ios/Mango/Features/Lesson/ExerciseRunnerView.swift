@@ -98,10 +98,33 @@ struct ExerciseRunnerView: View {
     }
 
     private var readingHint: some View {
-        Label("Read this in your own copy (Kindle, print, or library), then mark it done.", systemImage: "book.closed")
-            .font(.footnote)
-            .foregroundStyle(Palette.textSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: 12) {
+            // "Find it by: ‹quote›" — the verbatim opening line, searchable in Kindle
+            // and scannable in print. Selectable so the reader can copy it.
+            if let anchor = exercise.anchorQuote, !anchor.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Find it by", systemImage: "magnifyingglass")
+                        .font(.caption.weight(.semibold)).foregroundStyle(Palette.accent)
+                    Text("“\(anchor)”")
+                        .font(.system(.callout, design: .serif))
+                        .foregroundStyle(Palette.textPrimary)
+                        .textSelection(.enabled)
+                }
+            }
+            // "While you read: ‹notice›" — turns reading into an active task.
+            if let notice = exercise.whatToNotice, !notice.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("While you read", systemImage: "eye")
+                        .font(.caption.weight(.semibold)).foregroundStyle(Palette.accent)
+                    Text(notice)
+                        .font(.callout).foregroundStyle(Palette.textPrimary)
+                }
+            }
+            Label("Read this in your own copy (Kindle, print, or library), then mark it done.", systemImage: "book.closed")
+                .font(.footnote)
+                .foregroundStyle(Palette.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var freeText: some View {

@@ -372,13 +372,43 @@ components:
         title: { type: string }
         readingSummary: { type: string }
         estimatedMinutes: { type: integer }
+        reading:
+          $ref: "#/components/schemas/ReadingSlice"
         exercises:
           type: array
           items: { $ref: "#/components/schemas/Exercise" }
+    ReadingSlice:
+      type: object
+      description: >-
+        Optional pointer to the slice of the book to read for this lesson. The client
+        synthesizes a self-attested "reading" activity from it (Mango never renders the
+        book's text). Edition-independent: never page numbers (the model can't see them
+        and they vary by edition). Absent → the client falls back to readingSummary.
+      properties:
+        locator:
+          type: string
+          description: 'Chapter/section heading the model SEES in the text, e.g. "Book II" or "Chapter 3: The Habit Loop".'
+          example: "Book II"
+        anchorQuote:
+          type: string
+          description: "Verbatim opening sentence of the slice; edition-independent and searchable in Kindle."
+          example: "Begin the morning by saying to thyself…"
+        whatToNoticeWhileReading:
+          type: string
+          description: "An active reading cue — what to watch for while reading the slice."
+          example: "Notice what Marcus treats as within our control and what is not."
     Exercise:
       type: object
       properties:
-        kind: { type: string, enum: [quiz, reflection, application], example: reflection }
+        kind:
+          type: string
+          enum: [quiz, reflection, application]
+          example: reflection
+          description: >-
+            Activity kind on the wire. Reading is a client-side activity synthesized from
+            Lesson.reading and is never sent here. quiz tests one concrete idea from the
+            lesson's slice; reflection asks for the reader's own example of the slice's
+            idea; application is a concrete same-day action derived from the slice.
         prompt: { type: string }
         options:
           type: array

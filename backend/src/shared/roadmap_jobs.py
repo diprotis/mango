@@ -19,6 +19,7 @@ import os
 import uuid
 
 from . import catalog_data
+from .prompts import GROUNDING_CHAR_BUDGET
 from .storage import bucket_name, s3_client, table
 
 PENDING = "pending"
@@ -99,7 +100,7 @@ def create_pending(uid: str, job_id: str, book: dict, profile: dict, full_text: 
         # Generation inputs (the worker reads these; trimmed to the prompt budget).
         "book": json.dumps(book),
         "profile": json.dumps(profile or {}),
-        "excerpt": full_text[:12000],
+        "excerpt": full_text[:GROUNDING_CHAR_BUDGET],
     }
     if book_id:
         item["bookId"] = book_id

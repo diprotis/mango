@@ -81,6 +81,11 @@ _CANNED_ROADMAP = {
                     "title": "The morning premeditation",
                     "readingSummary": "Expect friction; choose virtue anyway.",
                     "estimatedMinutes": 5,
+                    "reading": {
+                        "locator": "Book II",
+                        "anchorQuote": "Begin the morning by saying to thyself…",
+                        "whatToNoticeWhileReading": "Notice how Marcus prepares for difficult people.",
+                    },
                     "exercises": [
                         {
                             "kind": "reflection",
