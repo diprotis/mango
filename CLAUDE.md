@@ -6,10 +6,32 @@ Read this before making changes.
 ## What Mango is
 
 A native iOS app that turns reading self-help books into a motivating, game-like
-learning journey: an immersive reader plus an active-learning loop (quizzes,
-reflections, real-world application tasks) wrapped in XP, levels, streaks, a daily
-goal, and achievements. It's a **monorepo** — a SwiftUI app and a separately
-deployed AWS backend.
+learning journey. Mango is **not a reader** — users read the real book on their own;
+inside Mango they do the active-learning loop (a curated reading slice, then quizzes,
+reflections, and real-world application tasks) wrapped in XP, levels, streaks, a daily
+goal, and achievements. It's a **monorepo** — a SwiftUI app and a separately deployed
+AWS backend.
+
+## Workflow — plan every slice before implementing (REQUIRED)
+
+For any non-trivial slice of work (a feature, a contract change, a refactor — anything
+beyond a one-line fix), **brainstorm and plan in plan mode first, and close every gap in
+the plan before writing code.** Concretely:
+
+1. **Brainstorm + investigate first.** Read the real code/contracts involved; don't assume.
+   Surface constraints and edge cases (offline-first, the three AI services, the
+   `openapi.yaml ⇄ DTOs.swift ⇄ backend` contract chain, SwiftData migration, no fabricated
+   data) *before* proposing a design.
+2. **Use plan mode** (`EnterPlanMode`) to think, and **`AskUserQuestion`** to resolve every
+   genuine fork with the operator. Do not pick a default on a decision that changes the
+   model, the contract, or the UX — ask.
+3. **Write the plan down** (a `working/<spec>/…PLAN.md`, an ADR for decisions, and update
+   `CONTEXT.md`/memory) and get explicit sign-off **before** implementation.
+4. **No open gaps at code time.** If a question surfaces mid-implementation, stop and resolve
+   it in the plan first — don't paper over it.
+
+This is the standard regardless of how the work is kicked off (direct request, `/drive`,
+`/ralph`, etc.). Spec-first keeps the repo coherent and the contract in sync.
 
 ## Repo layout
 
