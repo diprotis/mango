@@ -1,8 +1,14 @@
-"""Built-in public-domain catalog (dummy data).
+"""Built-in starter catalog (dependency-free).
 
-A tiny, dependency-free starter shelf the app (and the integration tests) can use
-without importing a book first. Every entry is short public-domain text, so the
-full ``text`` can be POSTed inline to ``/v1/roadmaps/generate``.
+A tiny starter shelf the app (and the integration tests) can use without importing
+a book first. The full ``text`` is bundled so it can be POSTed inline to
+``/v1/roadmaps/generate``.
+
+Two kinds of entries:
+  * Short **public-domain excerpts** (Meditations, Aesop, Self-Reliance).
+  * Original **educational summaries** that Mango wrote in its own words to teach a
+    modern book's ideas (e.g. ``make-it-stick``). These paraphrase well-established
+    concepts and cite the source work; they do not reproduce the book's prose.
 
 Each book is::
 
@@ -14,7 +20,7 @@ Each book is::
       "coverHue": int,         # 0-360 hue hint for a generated cover
       "wordCount": int,        # derived from ``text``
       "estimatedMinutes": int, # ~200 wpm reading estimate
-      "text": str,             # SHORT public-domain excerpt
+      "text": str,             # public-domain excerpt OR original summary
     }
 
 The canonical "dummy" book is :data:`DUMMY_BOOK_ID`.
@@ -71,6 +77,72 @@ _RAW = [
             "the race. A Crow, dying of thirst, found a pitcher with a little water, but "
             "could not reach it. He dropped in pebbles one by one until the water rose to "
             "the brim, and so quenched his thirst. Necessity is the mother of invention."
+        ),
+    },
+    {
+        "id": "make-it-stick",
+        "title": "Make It Stick: How Learning Really Works",
+        "author": "A Mango summary of the work by Brown, Roediger & McDaniel",
+        "excerpt": "The science of durable learning: why effortful practice beats rereading.",
+        "coverHue": 14,
+        # Original educational summary written by Mango in its own words. It teaches
+        # the well-established cognitive-science principles popularized by the book
+        # "Make It Stick" (Peter C. Brown, Henry L. Roediger III, Mark A. McDaniel,
+        # 2014); it paraphrases those ideas and does not reproduce the book's text.
+        "text": (
+            "How Learning Really Works: A Practical Summary of the Science\n\n"
+            "Most of us study in ways that feel productive but aren't. We reread "
+            "highlighted passages, review our notes, and mistake the resulting sense "
+            "of familiarity for real understanding. Decades of cognitive-science "
+            "research show that the techniques that feel hardest in the moment are "
+            "usually the ones that build the most durable, flexible knowledge. The "
+            "central lesson is counterintuitive: learning that feels easy tends to be "
+            "shallow and quickly forgotten, while learning that feels effortful tends "
+            "to last.\n\n"
+            "1. Retrieval practice (testing yourself). The single most powerful study "
+            "tool is trying to recall information from memory rather than reviewing "
+            "it. Every act of retrieval strengthens the memory and makes it easier to "
+            "find later. This is why low-stakes self-quizzing, flashcards, and writing "
+            "down what you remember after reading beat passively rereading the same "
+            "text. Researchers call this the testing effect: a test is not just a "
+            "measurement of learning, it is one of the best ways to produce it.\n\n"
+            "2. Spaced practice (don't cram). Studying in spaced sessions over days or "
+            "weeks produces far stronger long-term retention than massing all your "
+            "practice into one block. Cramming can win a quiz tomorrow, but the "
+            "knowledge fades fast. Letting a little forgetting set in between sessions "
+            "makes the next retrieval more effortful and therefore more powerful.\n\n"
+            "3. Interleaving (mix it up). Instead of practicing one type of problem "
+            "over and over before moving on, mix related topics or problem types "
+            "within a session. Interleaving feels more confusing and slower, and your "
+            "performance during practice may look worse, but it produces better "
+            "learning and a stronger ability to tell which approach a new problem "
+            "actually calls for.\n\n"
+            "4. Elaboration (explain it in your own words). Deepen understanding by "
+            "putting new ideas into your own language and connecting them to what you "
+            "already know. Asking how and why something works, and relating it to "
+            "personal experience or other concepts, gives a new idea more mental hooks "
+            "and makes it easier to retrieve.\n\n"
+            "5. Generation (try before you're taught). Attempting to solve a problem "
+            "or answer a question before being shown the solution leads to better "
+            "learning, even when your first attempt is wrong. The struggle primes your "
+            "mind to absorb the answer when it arrives.\n\n"
+            "6. Reflection (review the experience). Taking a few minutes to ask what "
+            "happened, what went well, what you would do differently, and what it "
+            "connects to combines retrieval and elaboration into a single durable "
+            "habit. Reflection turns raw experience into transferable lessons.\n\n"
+            "7. Calibration (beat the illusion of knowing). We are poor judges of our "
+            "own learning. Fluency with a text — the ease of rereading something "
+            "familiar — creates a false confidence that we have mastered it. Use "
+            "objective checks like quizzes and practice problems to see what you "
+            "actually know, not what you merely recognize.\n\n"
+            "The unifying idea is desirable difficulty: challenges that slow you down "
+            "during practice, like retrieving, spacing, and interleaving, are exactly "
+            "the conditions that make learning stick. Effort is not a sign that "
+            "learning is failing; it is often the sign that it is working. A simple "
+            "system follows from this: test yourself instead of rereading, space your "
+            "practice out over time, mix up what you practice, explain ideas in your "
+            "own words, attempt problems before seeing answers, and reflect on what "
+            "you have learned. Embrace the difficulty, and your knowledge will last."
         ),
     },
     {
