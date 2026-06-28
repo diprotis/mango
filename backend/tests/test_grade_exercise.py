@@ -1,7 +1,7 @@
 import json
 
 from handlers import grade_exercise
-from shared import claude
+from shared import agent
 
 
 def _invoke(payload):
@@ -23,7 +23,7 @@ def test_quiz_wrong_no_xp():
 
 
 def test_reflection_uses_claude(monkeypatch):
-    monkeypatch.setattr(claude, "grade", lambda *a, **k: {"score": 1.0, "feedback": "Great depth."})
+    monkeypatch.setattr(agent, "grade", lambda *a, **k: {"score": 1.0, "feedback": "Great depth."})
     resp = _invoke(
         {"kind": "reflection", "prompt": "Where does this apply?", "answer": "In my mornings."}
     )

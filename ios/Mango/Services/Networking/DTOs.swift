@@ -22,6 +22,22 @@ struct RoadmapDTO: Codable, Sendable {
     var milestones: [MilestoneDTO]
 }
 
+/// The async roadmap-job envelope returned by POST /v1/roadmaps/generate (202)
+/// and GET /v1/roadmaps/jobs/{jobId}. `roadmap` is present only when complete;
+/// `error` only when failed.
+struct RoadmapJobDTO: Codable, Sendable {
+    var jobId: String
+    var status: String
+    var roadmap: RoadmapDTO?
+    var error: String?
+
+    enum Status: String {
+        case pending, complete, failed
+    }
+
+    var parsedStatus: Status? { Status(rawValue: status) }
+}
+
 struct MilestoneDTO: Codable, Sendable {
     var title: String
     var subtitle: String

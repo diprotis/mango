@@ -2,7 +2,7 @@
   "environment": "beta",
   "stackNamePrefix": "Mango",
   "region": "us-east-1",
-  "bedrockModelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+  "bedrockModelId": "us.anthropic.claude-opus-4-8",
   "bedrockRegion": "",
   "aiMaxEffort": true,
   "cognitoDomainPrefix": "",

@@ -1,6 +1,6 @@
-"""Bedrock-backed claude client: response parsing + max-effort fallback.
+"""Bedrock-backed agent client: response parsing + max-effort fallback.
 
-These tests never touch AWS — ``claude._runtime`` is monkeypatched with a fake
+These tests never touch AWS — ``agent._runtime`` is monkeypatched with a fake
 client whose ``invoke_model`` returns a canned Bedrock payload.
 """
 
@@ -10,7 +10,7 @@ import json
 import botocore.exceptions
 import pytest
 
-from shared import claude
+from shared import agent
 
 
 def _bedrock_response(text: str) -> dict:
@@ -58,10 +58,11 @@ _ROADMAP_JSON = json.dumps(
 
 
 def test_grade_parses_bedrock_payload(monkeypatch):
+    monkeypatch.setenv("AI_MAX_EFFORT", "false")
     fake = _FakeRuntime('{"score":0.9,"feedback":"good"}')
-    monkeypatch.setattr(claude, "_runtime", lambda: fake)
+    monkeypatch.setattr(agent, "_runtime", lambda: fake)
 
-    result = claude.grade("reflection", "Where does this apply?", "In my mornings.")
+    result = agent.grade("reflection", "Where does this apply?", "In my mornings.")
 
     assert result == {"score": 0.9, "feedback": "good"}
     # The request used the configured Bedrock model id (set in conftest).
@@ -69,16 +70,33 @@ def test_grade_parses_bedrock_payload(monkeypatch):
     body = json.loads(fake.calls[0]["body"])
     assert body["anthropic_version"] == "bedrock-2023-05-31"
     assert body["messages"][0]["role"] == "user"
+    # Current-generation models reject `temperature` — we must never send it.
+    assert "temperature" not in body
 
 
 def test_generate_roadmap_parses_bedrock_payload(monkeypatch):
+    monkeypatch.setenv("AI_MAX_EFFORT", "false")
     fake = _FakeRuntime(_ROADMAP_JSON)
-    monkeypatch.setattr(claude, "_runtime", lambda: fake)
+    monkeypatch.setattr(agent, "_runtime", lambda: fake)
 
-    result = claude.generate_roadmap({"title": "X"}, {}, "excerpt")
+    result = agent.generate_roadmap({"title": "X"}, {}, "excerpt")
 
     assert result["title"] == "Build Better Habits"
     assert result["milestones"][0]["lessons"][0]["exercises"][0]["xp"] == 25
+
+
+def test_max_effort_uses_adaptive_thinking(monkeypatch):
+    """Max-effort sends adaptive extended thinking, never the legacy/temp form."""
+    monkeypatch.setenv("AI_MAX_EFFORT", "true")
+    fake = _FakeRuntime('{"score":0.8,"feedback":"ok"}')
+    monkeypatch.setattr(agent, "_runtime", lambda: fake)
+
+    agent.grade("reflection", "p", "a")
+
+    body = json.loads(fake.calls[0]["body"])
+    assert body["thinking"] == {"type": "adaptive"}
+    assert body["output_config"] == {"effort": "medium"}
+    assert "temperature" not in body
 
 
 class _FlakyRuntime:
@@ -101,23 +119,26 @@ class _FlakyRuntime:
 def test_max_effort_falls_back_without_thinking(monkeypatch):
     monkeypatch.setenv("AI_MAX_EFFORT", "true")
     fake = _FlakyRuntime('{"score":0.5,"feedback":"ok"}')
-    monkeypatch.setattr(claude, "_runtime", lambda: fake)
+    monkeypatch.setattr(agent, "_runtime", lambda: fake)
 
-    result = claude.grade("reflection", "p", "a")
+    result = agent.grade("reflection", "p", "a")
 
     assert result == {"score": 0.5, "feedback": "ok"}
-    # First attempt carried a thinking block; the retry dropped it.
+    # First attempt carried a thinking block; the retry dropped it (plain body).
     assert len(fake.calls) == 2
     assert "thinking" in json.loads(fake.calls[0]["body"])
-    assert "thinking" not in json.loads(fake.calls[1]["body"])
+    retry = json.loads(fake.calls[1]["body"])
+    assert "thinking" not in retry
+    assert "output_config" not in retry
+    assert "temperature" not in retry
 
 
 def test_non_max_effort_does_not_retry(monkeypatch):
     monkeypatch.setenv("AI_MAX_EFFORT", "false")
     fake = _FlakyRuntime('{"score":1.0}')
-    monkeypatch.setattr(claude, "_runtime", lambda: fake)
+    monkeypatch.setattr(agent, "_runtime", lambda: fake)
 
     # Without max-effort the first (and only) call raises and is re-raised.
     with pytest.raises(botocore.exceptions.ClientError):
-        claude.grade("reflection", "p", "a")
+        agent.grade("reflection", "p", "a")
     assert len(fake.calls) == 1

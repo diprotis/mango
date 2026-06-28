@@ -15,3 +15,7 @@ def s3_client():
 
 def bucket_name() -> str:
     return os.environ["BUCKET_NAME"]
+
+
+def lambda_client():
+    return boto3.client("lambda")

@@ -48,18 +48,38 @@ paths:
               schema: { $ref: "#/components/schemas/ParsedBook" }
   /v1/roadmaps/generate:
     post:
-      summary: Generate a gamified learning roadmap for a book (Claude-backed)
+      summary: Enqueue async roadmap generation for a book (Claude-backed)
+      description: >
+        Generation runs on Opus 4.8 and exceeds the API Gateway 30s timeout, so it
+        is asynchronous. Returns 202 with a jobId; poll GET /v1/roadmaps/jobs/{jobId}
+        until status is "complete" (carrying the roadmap) or "failed".
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/RoadmapRequest" }
       responses:
-        "200":
-          description: A generated roadmap
+        "202":
+          description: Generation accepted; poll the job for the result
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Roadmap" }
+              schema: { $ref: "#/components/schemas/RoadmapJob" }
+  /v1/roadmaps/jobs/{jobId}:
+    get:
+      summary: Poll the status/result of an async roadmap job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The job's current status (with roadmap when complete)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoadmapJob" }
+        "404":
+          description: No such job for the caller
   /v1/exercises/grade:
     post:
       summary: Grade a free-text or quiz answer and award XP (Claude-backed)
@@ -313,6 +333,22 @@ components:
             author: { type: string, nullable: true }
             text: { type: string }
         profile: { $ref: "#/components/schemas/Profile" }
+    RoadmapJob:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId: { type: string }
+        status:
+          type: string
+          enum: [pending, complete, failed]
+        roadmap:
+          allOf: [{ $ref: "#/components/schemas/Roadmap" }]
+          nullable: true
+          description: Present only when status is "complete".
+        error:
+          type: string
+          nullable: true
+          description: Present only when status is "failed".
     Roadmap:
       type: object
       properties:

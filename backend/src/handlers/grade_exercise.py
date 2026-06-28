@@ -4,7 +4,7 @@ Quizzes are graded deterministically (no model call). Reflections and applicatio
 tasks are graded by Claude for depth/specificity.
 """
 
-from shared import claude
+from shared import agent
 from shared.response import bad_request, ok, parse_body, server_error
 
 XP_BY_KIND = {"quiz": 15, "reflection": 25, "application": 40}
@@ -36,7 +36,7 @@ def handler(event, context):
         return bad_request("answer is required for reflection/application")
 
     try:
-        result = claude.grade(kind, prompt, answer)
+        result = agent.grade(kind, prompt, answer)
     except Exception as exc:  # noqa: BLE001
         return server_error(f"grading failed: {exc}")
 

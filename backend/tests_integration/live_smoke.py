@@ -10,6 +10,7 @@ exports these from the CloudFormation stack outputs). Stdlib + boto3 only.
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -118,14 +119,28 @@ def test_authenticated_journey_with_real_bedrock():
 
         status, detail = _req("GET", "/v1/catalog/dummy-meditations")
         assert status == 200
-        status, roadmap = _req(
+        # Roadmap generation is async (real Bedrock exceeds the API Gateway 30s
+        # cap): POST returns 202 + jobId, then poll until complete.
+        status, enqueued = _req(
             "POST",
             "/v1/roadmaps/generate",
             token,
             {"book": {"title": detail["title"], "text": detail["text"]}, "profile": {}},
         )
-        assert status == 200, f"roadmap generation failed: {roadmap}"
-        assert roadmap.get("milestones"), "Bedrock returned no milestones"
+        assert status == 202, f"expected 202 enqueue, got {status}: {enqueued}"
+        job_id = enqueued["jobId"]
+        roadmap = None
+        for _ in range(40):  # up to ~80s of real generation
+            time.sleep(2)
+            status, job = _req("GET", f"/v1/roadmaps/jobs/{job_id}", token)
+            assert status == 200, f"job poll failed: {status} {job}"
+            if job["status"] == "complete":
+                roadmap = job["roadmap"]
+                break
+            assert job["status"] != "failed", f"roadmap generation failed: {job.get('error')}"
+        assert roadmap and roadmap.get(
+            "milestones"
+        ), "Bedrock returned no milestones (or timed out)"
 
         status, _ = _req("POST", "/v1/me/library", token, {"bookId": "dummy-meditations"})
         assert status == 200
