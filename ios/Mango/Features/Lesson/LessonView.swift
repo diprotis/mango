@@ -8,7 +8,7 @@ struct LessonView: View {
     @Query private var profiles: [UserProfile]
     let lesson: Lesson
 
-    @State private var phase: Phase = .reading
+    @State private var phase: Phase = .exercises
     @State private var index = 0
     @State private var totalXP = 0
     @State private var unlocked: [Achievement] = []
@@ -17,7 +17,9 @@ struct LessonView: View {
     @State private var lessonWasComplete = false
     @State private var completedAtOpen: Set<Int> = []
 
-    enum Phase { case reading, exercises, summary }
+    // Reading is now the lesson's first activity (ADR-0003), so the lesson opens
+    // straight into the activity sequence — no separate reading phase.
+    enum Phase { case exercises, summary }
 
     private var exercises: [Exercise] { lesson.orderedExercises }
     private var profile: UserProfile? { profiles.first }
@@ -26,7 +28,6 @@ struct LessonView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Metrics.padL) {
                 switch phase {
-                case .reading: readingPhase
                 case .exercises: exercisePhase
                 case .summary: summaryPhase
                 }
@@ -42,37 +43,24 @@ struct LessonView: View {
         }
     }
 
-    private var readingPhase: some View {
-        VStack(alignment: .leading, spacing: Metrics.padL) {
-            Card {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Read", systemImage: "book").font(.caption.weight(.semibold)).foregroundStyle(Palette.accent)
-                    Text(lesson.readingSummary)
-                        .font(.system(.body, design: .serif))
-                        .foregroundStyle(Palette.textPrimary)
-                }
-            }
-            Button {
-                Haptics.tap()
-                if exercises.isEmpty { finishLesson() } else { phase = .exercises }
-            } label: {
-                Label(exercises.isEmpty ? "Mark as done" : "Practice (\(exercises.count))", systemImage: "checklist")
-            }
-            .buttonStyle(.mangoPrimary)
-        }
-    }
-
+    @ViewBuilder
     private var exercisePhase: some View {
-        VStack(alignment: .leading, spacing: Metrics.padL) {
-            ProgressView(value: Double(index), total: Double(max(1, exercises.count)))
-                .tint(Palette.accent)
-            Text("Exercise \(index + 1) of \(exercises.count)")
-                .font(.caption).foregroundStyle(Palette.textSecondary)
+        if exercises.indices.contains(index) {
+            VStack(alignment: .leading, spacing: Metrics.padL) {
+                ProgressView(value: Double(index), total: Double(max(1, exercises.count)))
+                    .tint(Palette.accent)
+                Text("Step \(index + 1) of \(exercises.count)")
+                    .font(.caption).foregroundStyle(Palette.textSecondary)
 
-            ExerciseRunnerView(exercise: exercises[index]) { awardedXP in
-                advance(awardedXP: awardedXP)
+                ExerciseRunnerView(exercise: exercises[index]) { awardedXP in
+                    advance(awardedXP: awardedXP)
+                }
+                .id(index)
             }
-            .id(index)
+        } else {
+            // No activities (shouldn't happen — every lesson leads with reading).
+            Button("Mark as done") { finishLesson() }
+                .buttonStyle(.mangoPrimary)
         }
     }
 

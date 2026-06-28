@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Presents a single exercise, grades it (quiz locally, free-text via the AI
-/// service), shows feedback, then reports the awarded XP back to the lesson.
+/// Presents a single activity and reports the awarded XP back to the lesson:
+/// reading is self-attested ("I've read this", no text shown — ADR-0001), quizzes
+/// grade locally, and reflections/applications grade via the AI service.
 struct ExerciseRunnerView: View {
     @Environment(AppModel.self) private var app
     let exercise: Exercise
@@ -24,11 +25,29 @@ struct ExerciseRunnerView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             switch exercise.kind {
+            case .reading: readingHint
             case .quiz: quizOptions
             case .reflection, .application: freeText
             }
 
-            if graded {
+            if exercise.kind == .reading {
+                // Self-attested: one tap completes, no grading or feedback beat.
+                if graded {
+                    Label("Marked as read", systemImage: "checkmark.circle.fill")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Palette.success)
+                    Button("Continue") { complete() }.buttonStyle(.mangoPrimary)
+                } else {
+                    Button {
+                        awardedXP = exercise.xp
+                        graded = true
+                        Haptics.success()
+                        complete()
+                    } label: {
+                        Label("I've read this", systemImage: "checkmark")
+                    }
+                    .buttonStyle(.mangoPrimary)
+                }
+            } else if graded {
                 feedbackCard
                 Button("Continue") { complete() }.buttonStyle(.mangoPrimary)
             } else {
@@ -78,6 +97,13 @@ struct ExerciseRunnerView: View {
         }
     }
 
+    private var readingHint: some View {
+        Label("Read this in your own copy (Kindle, print, or library), then mark it done.", systemImage: "book.closed")
+            .font(.footnote)
+            .foregroundStyle(Palette.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var freeText: some View {
         TextEditor(text: $answer)
             .frame(minHeight: 150)
@@ -111,6 +137,7 @@ struct ExerciseRunnerView: View {
 
     private var canSubmit: Bool {
         switch exercise.kind {
+        case .reading: return true  // completed via "I've read this", not the submit path
         case .quiz: return chosen != nil
         case .reflection, .application: return answer.trimmingCharacters(in: .whitespacesAndNewlines).count >= 3
         }

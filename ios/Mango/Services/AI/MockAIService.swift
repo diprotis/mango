@@ -87,6 +87,10 @@ struct MockAIService: AIService {
         let score = min(1.0, 0.55 + Double(min(words, 40)) / 80.0)
         let feedback: String
         switch kind {
+        case .reading:
+            // Reading is self-attested and completed in-app, not graded — return
+            // full credit defensively for any caller that routes it here.
+            return GradeResultDTO(correct: nil, score: 1, feedback: "Nice — reading done.", xpAwarded: kind.baseXP)
         case .application:
             feedback = "Love that you put it into practice — notice what felt different and do it once more tomorrow."
         case .reflection:

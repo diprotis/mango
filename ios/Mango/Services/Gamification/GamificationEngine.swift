@@ -53,6 +53,7 @@ struct GamificationEngine {
 
         var unlocked: [String] = [AchievementCatalog.firstStep]
         switch exercise.kind {
+        case .reading: break  // reading is its own first-class step; no kind-specific badge yet
         case .quiz: unlocked.append(AchievementCatalog.firstQuiz)
         case .reflection: unlocked.append(AchievementCatalog.firstReflection)
         case .application: unlocked.append(AchievementCatalog.appliedIt)

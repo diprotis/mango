@@ -1,9 +1,10 @@
 # Mango
 
-Mango is **not a reading app**. Users read the real book wherever they already read
-(print, Kindle, library); inside Mango they do the **active-learning loop** — quizzes,
-reflections, real-world application tasks — and track their reading journey. The product
-competes on *doing*, not on in-app reading or summarizing.
+Mango is **not a reading app**, but it **manages the whole reading journey**. Users read the
+real book wherever they already read (print, Kindle, library); Mango curates that reading
+into slices and threads them through a single roadmap, interleaved with the **active-learning
+loop** — quizzes, reflections, real-world application tasks. The product competes on *doing*
+(reading included as a thing you do), not on rendering book text or summarizing.
 
 ## Language
 
@@ -34,13 +35,17 @@ its milestone is checkpoint-confirmed AND it's the first incomplete lesson.
 _Avoid_: Blocked, disabled.
 
 **Activity**:
-A unit of doing inside Mango — a quiz, reflection, or application task (the existing
-`ExerciseKind`s), and by extension the "What to read next?" choice card. The thing Mango is
-*for*. Reading the book is explicitly **not** an activity.
+A unit of doing inside Mango — a **reading** slice, quiz, reflection, or application task
+(the `ExerciseKind`s), and by extension the "What to read next?" choice card. The thing Mango
+is *for*. **Reading is a first-class activity** (ADR-0003): each lesson leads with a reading
+slice, then its practice. (Reading is the one self-attested activity — completed by an "I've
+read this" tap, not graded.)
 _Avoid_: Exercise (internal model name; "activity" is the product term), task.
 
-**Reading Recap** (lesson reading phase):
-The orientation text shown before a lesson's activities — a short "in this section…"
-summary plus a "read this section in your own copy" cue. It is explicitly **not** the
-source text; Mango never renders the book's full text.
-_Avoid_: Reading phase, the text, content.
+**Reading Slice**:
+A curated chunk of the book to read in the user's own copy, rendered as the first activity of
+a lesson and threaded through the whole roadmap (read a slice → practice it → read the next).
+The generator decides slice boundaries per book. Its prompt *instructs what to read* and may
+carry a short "in this section…" cue — but Mango **never renders the book's full text**
+(ADR-0001). Completed by self-attestation.
+_Avoid_: Reading phase, the text, content, chapter (slices need not equal chapters).

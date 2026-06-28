@@ -62,7 +62,7 @@ enum SeedData {
             estimatedMinutes: 4,
             order: 0
         )
-        l1.exercises = [
+        leadWithReading(l1, [
             Exercise(
                 kind: .quiz,
                 prompt: "According to the Stoics, what is truly 'up to us'?",
@@ -77,14 +77,14 @@ enum SeedData {
                 xp: ExerciseKind.reflection.baseXP,
                 order: 1
             ),
-        ]
+        ])
         let l2 = Lesson(
             title: "Morning Preparation",
             readingSummary: "Marcus rehearsed the day's difficulties in advance so nothing could ambush his composure.",
             estimatedMinutes: 5,
             order: 1
         )
-        l2.exercises = [
+        leadWithReading(l2, [
             Exercise(
                 kind: .reflection,
                 prompt: "What is one difficulty likely today? Write how your best self would meet it.",
@@ -97,7 +97,7 @@ enum SeedData {
                 xp: ExerciseKind.application.baseXP,
                 order: 1
             ),
-        ]
+        ])
         m1.lessons = [l1, l2]
 
         let m2 = Milestone(title: "Obstacle Into Way", subtitle: "Turning friction into fuel", order: 1)
@@ -107,7 +107,7 @@ enum SeedData {
             estimatedMinutes: 4,
             order: 0
         )
-        l3.exercises = [
+        leadWithReading(l3, [
             Exercise(
                 kind: .quiz,
                 prompt: "What does Marcus suggest an obstacle can become?",
@@ -122,11 +122,21 @@ enum SeedData {
                 xp: ExerciseKind.application.baseXP,
                 order: 1
             ),
-        ]
+        ])
         m2.lessons = [l3]
 
         roadmap.milestones = [m1, m2]
         context.insert(book)
+    }
+
+    /// Threads a reading activity (order 0) ahead of a lesson's practice activities,
+    /// mirroring what `RoadmapBuilder` does for generated roadmaps — so the bundled
+    /// sample demonstrates reading-as-activity offline (ADR-0003). Renumbers the
+    /// passed practice activities to follow the reading step.
+    private static func leadWithReading(_ lesson: Lesson, _ practice: [Exercise]) {
+        let reading = RoadmapBuilder.readingActivity(title: lesson.title, summary: lesson.readingSummary)
+        for (i, exercise) in practice.enumerated() { exercise.order = i + 1 }
+        lesson.exercises = [reading] + practice
     }
 
     private static let sampleText = """

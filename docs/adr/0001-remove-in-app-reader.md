@@ -23,3 +23,10 @@ storage review.
 
 **Hard to reverse:** restoring a reader means re-introducing display UI, reading-progress
 fields, and the reading-centric navigation we deleted.
+
+**Update (2026-06-28, see [ADR-0003](0003-reading-as-first-class-activity.md)):** reading is
+now a *first-class activity* threaded through the roadmap — but this ADR's core still holds.
+Mango still **never renders the book's full text**; a reading activity only *instructs* what
+slice to read in the user's own copy and is completed by self-attestation. `Book.fullText`
+remains a non-displayed generation cache. Reading-as-activity changed the product framing
+("reading is not an activity" → "reading is a curated activity"), not the no-reader decision.

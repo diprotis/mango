@@ -2,7 +2,16 @@
 
 > **Status:** Planned (grilled 2026-06-28) · **Epic:** M11 (keystone) · **Owner:** unassigned
 > **Source spec:** [`../0008-product-reframe-activity-first.md`](../0008-product-reframe-activity-first.md)
-> **Glossary:** [`/CONTEXT.md`](../../CONTEXT.md) · **Decisions:** [`ADR-0001`](../../docs/adr/0001-remove-in-app-reader.md), [`ADR-0002`](../../docs/adr/0002-journey-state-orthogonal-to-activity-gating.md)
+> **Glossary:** [`/CONTEXT.md`](../../CONTEXT.md) · **Decisions:** [`ADR-0001`](../../docs/adr/0001-remove-in-app-reader.md), [`ADR-0002`](../../docs/adr/0002-journey-state-orthogonal-to-activity-gating.md), [`ADR-0003`](../../docs/adr/0003-reading-as-first-class-activity.md)
+
+> ⚠️ **Amended 2026-06-28 — reading is now a first-class activity ([ADR-0003](../../docs/adr/0003-reading-as-first-class-activity.md)).**
+> The **milestone-level passive Reading Checkpoint** below (D1/D9, §3.2 `readGated`, §4.3, slices
+> A2/C1, FR-5, AC-5) is **superseded**: reading confirmation is now an `ExerciseKind.reading`
+> activity that leads every lesson (`order 0`) and gates that lesson's practice — finer and
+> active, not a per-milestone gate. `JourneyState` (book lifecycle, slice 1, shipped) and
+> ADR-0002 are unaffected. Where this roadmap describes the milestone checkpoint, read it as
+> "per-lesson reading activity." The migration backfill (§5/E1) prepends a reading activity per
+> lesson (from `readingSummary`) instead of pre-confirming milestones.
 
 This roadmap supersedes the spec's §11 task list. It reflects the decisions reached in the
 `/grill-with-docs` session, where the spec was stress-tested against the real codebase and

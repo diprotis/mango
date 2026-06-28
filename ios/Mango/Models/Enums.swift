@@ -44,11 +44,16 @@ enum BookSourceKind: String, Codable {
 }
 
 enum ExerciseKind: String, CaseIterable, Codable, Identifiable {
-    case quiz, reflection, application
+    /// Reading is a first-class activity: a curated slice of the book to read in
+    /// the user's own copy, threaded through the roadmap before each lesson's
+    /// practice. Mango never renders the text (see ADR-0001) — the prompt instructs
+    /// *what* to read; completing it is a self-attested "I've read this".
+    case reading, quiz, reflection, application
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .reading: return "Read"
         case .quiz: return "Quick Check"
         case .reflection: return "Reflect"
         case .application: return "Apply It"
@@ -57,6 +62,7 @@ enum ExerciseKind: String, CaseIterable, Codable, Identifiable {
 
     var symbol: String {
         switch self {
+        case .reading: return "book"
         case .quiz: return "checkmark.circle"
         case .reflection: return "bubble.left.and.text.bubble.right"
         case .application: return "figure.walk.motion"
@@ -65,6 +71,7 @@ enum ExerciseKind: String, CaseIterable, Codable, Identifiable {
 
     var tint: Color {
         switch self {
+        case .reading: return Palette.info
         case .quiz: return Palette.info
         case .reflection: return Palette.accent
         case .application: return Palette.success
@@ -73,11 +80,16 @@ enum ExerciseKind: String, CaseIterable, Codable, Identifiable {
 
     var baseXP: Int {
         switch self {
+        case .reading: return 10
         case .quiz: return 15
         case .reflection: return 25
         case .application: return 40
         }
     }
+
+    /// Whether this activity is self-attested (no answer to grade) — reading is
+    /// completed by confirmation, like marking a task done.
+    var isSelfAttested: Bool { self == .reading }
 }
 
 /// Visual/logical state of a lesson node in the journey path.
