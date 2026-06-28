@@ -138,7 +138,9 @@ def test_authenticated_journey_with_real_bedrock():
                 roadmap = job["roadmap"]
                 break
             assert job["status"] != "failed", f"roadmap generation failed: {job.get('error')}"
-        assert roadmap and roadmap.get("milestones"), "Bedrock returned no milestones (or timed out)"
+        assert roadmap and roadmap.get(
+            "milestones"
+        ), "Bedrock returned no milestones (or timed out)"
 
         status, _ = _req("POST", "/v1/me/library", token, {"bookId": "dummy-meditations"})
         assert status == 200

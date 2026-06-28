@@ -36,9 +36,7 @@ class ApiStack(Stack):
         common_env = {
             "TABLE_NAME": table.table_name,
             "BUCKET_NAME": bucket.bucket_name,
-            "BEDROCK_MODEL_ID": config.get(
-                "bedrockModelId", "us.anthropic.claude-opus-4-8"
-            ),
+            "BEDROCK_MODEL_ID": config.get("bedrockModelId", "us.anthropic.claude-opus-4-8"),
             "BEDROCK_REGION": config.get("bedrockRegion", ""),
             "AI_MAX_EFFORT": str(config.get("aiMaxEffort", True)).lower(),
             "EVENTS_STREAM_NAME": events_stream_name,
@@ -102,9 +100,7 @@ class ApiStack(Stack):
 
         # The POST handler async-invokes the worker; give it just that permission
         # and tell it the worker's name. roadmap_status only reads job rows (table).
-        roadmap_fn.add_environment(
-            "ROADMAP_WORKER_FUNCTION", roadmap_worker_fn.function_name
-        )
+        roadmap_fn.add_environment("ROADMAP_WORKER_FUNCTION", roadmap_worker_fn.function_name)
         roadmap_worker_fn.grant_invoke(roadmap_fn)
 
         # Backend AI runs on Amazon Bedrock (IAM auth, no API key). Only the
