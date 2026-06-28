@@ -2,6 +2,11 @@
 
 - **Date:** 2026-06-28 · **Scope:** the as-built backend + the 18 planning specs (`working/0008–0025`) · **Method:** 4 parallel research workflows (data model, S3 artifacts, catalog caching, cross-cutting sweep), each grounded by reading the current code.
 
+> **Status update (2026-06-28):** every proposed spec below is now **drafted** in
+> `working/` — the three concerns as **0026/0027/0028**, the cross-cutting gaps as
+> **0029–0037**, and 0019 promoted to ship-now. A separate **agentic learning-engine
+> cluster 0038–0044** was also added. See [`INDEX.md`](INDEX.md).
+
 ## How to read this
 
 This answers your three concerns with concrete proposed designs, then surfaces the

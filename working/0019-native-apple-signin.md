@@ -1,7 +1,14 @@
 # 0019 — Native Sign in with Apple
 
-- **Epic:** M3 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-26
+- **Epic:** M3 · **Status:** Draft · **Owner:** unassigned · **Updated:** 2026-06-28
 - **Reviewers:** Principal, SD, QA
+- **Priority (per [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) G3): ship-now keystone.**
+  The app still has **no shipped sign-in flow**, which gates every server-side feature
+  (0014/0020/0021/0023/0024/0025/0026 and the whole agentic engine 0038+). The near-term,
+  must-ship deliverable of this spec is the **sign-in client + Keychain token storage +
+  `APIClient` `Authorization` wiring** — using the **Hosted-UI path as the interim** if the
+  native Apple token-exchange (below) slips. Sequence this **first**, before monetization,
+  social, and the agentic work.
 
 ## 1. Summary
 Replace the current **web-federated** Apple sign-in (a Cognito Hosted-UI button that
