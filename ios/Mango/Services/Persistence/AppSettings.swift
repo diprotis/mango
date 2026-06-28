@@ -21,8 +21,6 @@ final class AppSettings {
     var apiEnvironment: APIEnvironment { didSet { store.set(apiEnvironment.rawValue, forKey: Keys.environment) } }
     /// URL for the "personal" environment (your own AWS deploy, e.g. diprotis-dev).
     var personalBaseURL: String { didSet { store.set(personalBaseURL, forKey: Keys.personalURL) } }
-    /// When the environment is Offline (Mock) and a Claude key is saved, use it on-device.
-    var useDirectClaudeWhenOffline: Bool { didSet { store.set(useDirectClaudeWhenOffline, forKey: Keys.directOffline) } }
 
     var themePreference: ThemePreference { didSet { store.set(themePreference.rawValue, forKey: Keys.theme) } }
     var reminderEnabled: Bool { didSet { store.set(reminderEnabled, forKey: Keys.reminder) } }
@@ -36,7 +34,6 @@ final class AppSettings {
         self.store = store
         self.apiEnvironment = APIEnvironment(rawValue: store.string(forKey: Keys.environment) ?? "") ?? .mock
         self.personalBaseURL = store.string(forKey: Keys.personalURL) ?? ""
-        self.useDirectClaudeWhenOffline = store.bool(forKey: Keys.directOffline)
         self.themePreference = ThemePreference(rawValue: store.string(forKey: Keys.theme) ?? "") ?? .system
         self.reminderEnabled = store.bool(forKey: Keys.reminder)
 
@@ -65,12 +62,9 @@ final class AppSettings {
     /// Read-only URL string for display in Settings.
     var displayBackendURL: String { effectiveBackendURL?.absoluteString ?? "" }
 
-    var hasClaudeKey: Bool { (Keychain.read(.anthropicKey) ?? "").isEmpty == false }
-
     private enum Keys {
         static let environment = "mango.apiEnvironment"
         static let personalURL = "mango.personalBaseURL"
-        static let directOffline = "mango.useDirectClaudeWhenOffline"
         static let theme = "mango.theme"
         static let reminder = "mango.reminderEnabled"
         static let deviceId = "mango.deviceUserId"

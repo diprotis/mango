@@ -4,7 +4,6 @@ import Security
 /// Minimal Keychain wrapper for small secrets (API key, auth session).
 enum Keychain {
     enum Item: String {
-        case anthropicKey = "mango.secret.anthropicKey"
         /// Legacy single-token slot. Kept so existing reads don't break; the
         /// current id token now lives inside the JSON-encoded `.authSession`.
         case authToken = "mango.secret.authToken"

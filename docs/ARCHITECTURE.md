@@ -53,12 +53,15 @@ locked and flipped to unlocked by the engine.
 ## AI abstraction: offline vs online
 
 Everything model-facing goes through the `AIService` protocol (`generateRoadmap`,
-`grade`), with three implementations: **RemoteAIService** (the AWS backend, via
-`APIClient`), **DirectClaudeAIService** (the Anthropic Messages API directly with a
-Keychain key — testing only, key lives on-device), and **MockAIService** (on-device
-content, no network). `AIServiceProvider.make` picks one from `AppSettings.aiMode`:
-`mock`/`backend`/`directClaude` force a mode, and `auto` tries backend, then a
-direct key, then mock — so the app *always* works, even with no key and no network.
+`grade`), with two implementations: **RemoteAIService** (the AWS/Bedrock backend, via
+`APIClient` — the only real generator) and **MockAIService** (on-device content, no
+network). `AIServiceProvider.make` selects by environment: a configured real backend
+→ RemoteAIService, otherwise → MockAIService, so the app still works offline today.
+
+> The on-device **DirectClaudeAIService** (Anthropic Messages API with a Keychain key)
+> was removed: the backend holds the only key and is the single source of generation.
+> Under the in-progress 0008 Bedrock-only program, `MockAIService` will also be retired
+> once Cognito sign-in lands — at which point generation requires sign-in + network.
 
 ## Connectors layer
 

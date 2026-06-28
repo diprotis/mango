@@ -78,9 +78,9 @@ Use the root `Makefile` (run `make help`). Key targets:
 Navigation is centralized in the `Route` enum applied with `.mangoDestinations()` on
 each tab's `NavigationStack`. Persistence is SwiftData (`@Model` + `@Query`); there is
 exactly one `UserProfile`. AI generation goes through the `AIService` protocol with
-three interchangeable implementations — `RemoteAIService` (backend), `DirectClaudeAIService`
-(Anthropic on-device), `MockAIService` (offline) — chosen by `AIServiceProvider` from
-`AppSettings.aiMode`. Content import is the `ConnectorService` (web URL / Gutenberg /
+two interchangeable implementations — `RemoteAIService` (the AWS/Bedrock backend, the only
+real generator) and `MockAIService` (offline fallback) — chosen by `AIServiceProvider` from
+the selected environment. Content import is the `ConnectorService` (web URL / Gutenberg /
 pasted text / PDF). Gamification lives in `GamificationEngine` with pure, unit-tested
 `StreakCalculator` and `LevelCurve`.
 
@@ -90,12 +90,13 @@ single table (`PK`/`SK`, e.g. `BOOK#<id>/META`, `USER#<id>/PROGRESS`) plus `GSI1
 
 ## Invariants — do not break these
 
-- **Backend AI calls go through Amazon Bedrock** (IAM auth, no API key). The Secrets
-  Manager Anthropic key is optional/only for the on-device Direct-Claude testing path
-  (`DirectClaudeAIService`, key in Keychain) — never ship a key in the app.
+- **Backend AI calls go through Amazon Bedrock** (IAM auth, no API key). Never ship an
+  Anthropic API key in the app. (The on-device `DirectClaudeAIService` was removed — the
+  Bedrock backend is the only real generator.)
 - **The app must run fully offline** on first launch: `MockAIService` + the bundled
   public-domain sample book. Don't make onboarding or the first lesson depend on a
-  network call or a key.
+  network call or a key. *(Note: under the in-progress 0008 Bedrock-only program, `MockAIService`
+  is slated for removal once Cognito sign-in lands; until then offline-first holds.)*
 - **No third-party iOS dependencies.** Keep the app SPM/CocoaPods-free so it builds by
   just opening the project.
 - **Xcode 16 file-system-synchronized groups:** new Swift files placed under

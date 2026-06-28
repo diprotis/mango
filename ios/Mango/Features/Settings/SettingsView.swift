@@ -7,8 +7,6 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [UserProfile]
 
-    @State private var apiKey = ""
-    @State private var keyStatus = ""
     @State private var showEraseConfirm = false
 
     var body: some View {
@@ -50,19 +48,6 @@ struct SettingsView: View {
                     }
                 }
 
-                Section {
-                    SecureField("Anthropic API key (sk-ant-…)", text: $apiKey)
-                    Button("Save key") { saveKey() }
-                    if !keyStatus.isEmpty {
-                        Text(keyStatus).font(.caption).foregroundStyle(Palette.success)
-                    }
-                    Toggle("Use this key when Offline", isOn: $settings.useDirectClaudeWhenOffline)
-                } header: {
-                    Text("On-device Claude key")
-                } footer: {
-                    Text("When the environment is Offline and a key is saved, roadmaps and grading call Claude directly from this device (testing only — the key never leaves the Keychain).")
-                }
-
                 Section("Appearance") {
                     Picker("Theme", selection: $settings.themePreference) {
                         ForEach(ThemePreference.allCases) { Text($0.title).tag($0) }
@@ -94,10 +79,8 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            .onAppear { apiKey = Keychain.read(.anthropicKey) ?? "" }
             .onChange(of: settings.apiEnvironment) { app.reloadAIService() }
             .onChange(of: settings.personalBaseURL) { app.reloadAIService() }
-            .onChange(of: settings.useDirectClaudeWhenOffline) { app.reloadAIService() }
             .onChange(of: settings.reminderEnabled) { _, enabled in toggleReminder(enabled) }
             .confirmationDialog("Erase your library?", isPresented: $showEraseConfirm, titleVisibility: .visible) {
                 Button("Erase everything", role: .destructive) { eraseLibrary() }
@@ -106,19 +89,6 @@ struct SettingsView: View {
                 Text("Removes all books and journeys. Your XP, streak, and badges stay.")
             }
         }
-    }
-
-    private func saveKey() {
-        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            Keychain.delete(.anthropicKey)
-            keyStatus = "Key removed."
-        } else {
-            Keychain.save(.anthropicKey, value: trimmed)
-            keyStatus = "Key saved to Keychain."
-        }
-        app.reloadAIService()
-        Haptics.success()
     }
 
     private func toggleReminder(_ enabled: Bool) {

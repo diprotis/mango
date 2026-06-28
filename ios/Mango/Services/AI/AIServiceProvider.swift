@@ -1,9 +1,10 @@
 import Foundation
 
-/// Resolves the active AIService from the selected environment + stored secrets.
+/// Resolves the active AIService from the selected environment.
 ///
-/// Precedence: a configured real backend (personal/beta/prod) → an on-device
-/// Claude key when offline-and-enabled → the offline mock.
+/// Precedence: a configured real backend (personal/beta/prod, Bedrock-backed) →
+/// the offline mock. (On-device direct-to-Anthropic generation was removed; the
+/// backend is the only real generator.)
 enum AIServiceProvider {
     static func make(settings: AppSettings, auth: AuthService) -> AIService {
         if settings.isRealBackend, let url = settings.effectiveBackendURL {
@@ -13,11 +14,6 @@ enum AIServiceProvider {
                 authToken: auth.session?.idToken
             )
             return RemoteAIService(client: client)
-        }
-
-        if settings.useDirectClaudeWhenOffline,
-           let key = Keychain.read(.anthropicKey), !key.isEmpty {
-            return DirectClaudeAIService(apiKey: key)
         }
 
         return MockAIService()
