@@ -127,9 +127,11 @@ single table (`PK`/`SK`, e.g. `BOOK#<id>/META`, `USER#<id>/PROGRESS`) plus `GSI1
 
 ## Status / not-yet-built
 
-- The app has **no Cognito sign-in yet**, so "Mango Backend" AI mode can't authenticate
-  against the deployed (authorizer-protected) API. Use Direct-Claude or Mock until sign-in
-  is wired — it's the top item in `docs/PRODUCT_ROADMAP.md`.
+- **Cognito sign-in is built** (Hosted-UI OAuth2 + PKCE in `Services/Auth/AuthService.swift`,
+  UI in `AuthView`/`AccountView`; beta pool/client baked into `AppConfig.plist`) and the
+  authenticated backend path is verified against the deployed beta. Under the 0008
+  Bedrock-only program, `MockAIService` is slated for removal once the on-device sign-in
+  flow is fully verified (P3).
 - Planned: progress sync, social leagues, spaced-repetition "insight review", EPUB import,
   moving PDF parsing off the main thread.
 

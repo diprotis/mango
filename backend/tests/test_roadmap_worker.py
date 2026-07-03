@@ -59,3 +59,39 @@ def test_worker_handles_missing_job(aws):
     out = roadmap_worker.handler({"uid": "ghost", "jobId": "nope"}, None)
     assert out["ok"] is False
     assert out["reason"] == "job not found"
+
+
+def test_oversized_excerpt_spills_to_s3_and_round_trips(aws, monkeypatch):
+    """Full-book grounding can exceed DynamoDB's 400KB item cap: big excerpts must
+    spill to S3 (excerptRef) and load back verbatim for the worker."""
+    uid, job_id = "user-big", roadmap_jobs.new_job_id()
+    big_text = ("The impediment to action advances action. " * 12000)  # ~516k chars
+    assert len(big_text) > roadmap_jobs._INLINE_EXCERPT_MAX
+
+    roadmap_jobs.create_pending(uid, job_id, {"title": "Big"}, {}, big_text, book_id=None)
+
+    # The job row must NOT carry the text inline (would breach the item cap).
+    from shared.storage import table
+
+    item = table().get_item(
+        Key={"PK": f"USER#{uid}", "SK": f"ROADMAPJOB#{job_id}"}
+    )["Item"]
+    assert "excerpt" not in item
+    assert item["excerptRef"].startswith(f"users/{uid}/roadmap-jobs/")
+
+    # The worker's input loader reads it back from S3, trimmed to the budget.
+    inputs = roadmap_jobs.load_inputs(uid, job_id)
+    expected = big_text[: roadmap_jobs.GROUNDING_CHAR_BUDGET]
+    assert inputs["excerpt"] == expected
+
+    # And the worker generates end-to-end from the spilled excerpt.
+    captured = {}
+
+    def _fake_generate(book, profile, excerpt_text):
+        captured["len"] = len(excerpt_text)
+        return dict(_FAKE)
+
+    monkeypatch.setattr(agent, "generate_roadmap", _fake_generate)
+    out = roadmap_worker.handler({"uid": uid, "jobId": job_id}, None)
+    assert out["ok"] is True
+    assert captured["len"] == len(expected)

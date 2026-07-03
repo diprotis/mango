@@ -98,7 +98,10 @@ class ApiStack(Stack):
         ):
             table.grant_read_write_data(fn)
         bucket.grant_read_write(parse_fn)
-        bucket.grant_read(roadmap_fn)  # POST may load a stored book's text from S3
+        # POST loads stored book text AND spills oversized grounding excerpts to
+        # jobs/<uid>/<jobId>/excerpt.txt (DynamoDB items cap at 400KB — see
+        # roadmap_jobs.create_pending), so it needs read + write.
+        bucket.grant_read_write(roadmap_fn)
         bucket.grant_read(roadmap_worker_fn)
         bucket.grant_read_write(delete_fn)  # enumerates + deletes users/<sub>/ objects
 
