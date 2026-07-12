@@ -5,7 +5,7 @@ API 30s integration timeout. So generation is asynchronous:
 
   POST /v1/roadmaps/generate  → persist a job (status "pending"), async-invoke the
                                 worker Lambda, return 202 {jobId,status}.
-  worker (roadmap_worker)     → generate (up to the Lambda's own 60s), write the
+  worker (roadmap_worker)     → generate (up to the Lambda's own 600s), write the
                                 roadmap back to the job (status "complete"/"failed").
   GET  /v1/roadmaps/jobs/{id} → read the job's current status/result.
 
@@ -145,7 +145,9 @@ def get_job(uid: str, job_id: str):
 
 
 def load_inputs(uid: str, job_id: str):
-    """Read back the generation inputs the worker needs. None if the job is gone."""
+    """Read back the generation inputs the worker needs (plus the job's current
+    status/startedAt so a retried invoke can no-op — same single read). None if
+    the job is gone."""
     item = table().get_item(Key=_job_key(uid, job_id)).get("Item")
     if not item:
         return None
@@ -159,7 +161,19 @@ def load_inputs(uid: str, job_id: str):
         "profile": json.loads(item.get("profile", "{}")),
         "excerpt": excerpt,
         "bookId": item.get("bookId"),
+        "status": item.get("status", PENDING),
+        "startedAt": item.get("startedAt"),
     }
+
+
+def mark_started(uid: str, job_id: str):
+    """Stamp the moment generation begins, so a re-invoke of a still-pending job
+    is recognizable as Lambda's retry after a timeout (vs the first attempt)."""
+    table().update_item(
+        Key=_job_key(uid, job_id),
+        UpdateExpression="SET startedAt = :t",
+        ExpressionAttributeValues={":t": _now_iso()},
+    )
 
 
 def mark_complete(uid: str, job_id: str, roadmap: dict):

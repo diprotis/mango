@@ -66,11 +66,13 @@ class ApiStack(Stack):
             "RoadmapFn", "handlers.generate_roadmap.handler", timeout=30, memory=512
         )
         # Generation grounds on the full book (see GROUNDING_CHAR_BUDGET in prompts.py),
-        # so real Bedrock generation can run well past a minute. The worker is off the
-        # API Gateway request path (async, polled), so it gets a long-running budget
-        # (Lambda max is 900s); 300s leaves ample headroom for large books.
+        # so real Bedrock generation can run well past a minute — measured cold runs
+        # have breached 300s on Bedrock-variance days. The worker is off the API
+        # Gateway request path (async, polled), so it gets a long-running budget
+        # (Lambda max is 900s); 600s absorbs the observed variance. Keep the iOS
+        # poll ceiling (RemoteAIService.maxPolls) ≥ this budget.
         roadmap_worker_fn = make_fn(
-            "RoadmapWorkerFn", "handlers.roadmap_worker.handler", timeout=300, memory=512
+            "RoadmapWorkerFn", "handlers.roadmap_worker.handler", timeout=600, memory=512
         )
         roadmap_status_fn = make_fn(
             "RoadmapStatusFn", "handlers.roadmap_status.handler", timeout=15

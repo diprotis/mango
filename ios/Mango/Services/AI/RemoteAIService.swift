@@ -7,10 +7,12 @@ struct RemoteAIService: AIService {
     /// Roadmap generation is asynchronous server-side (Opus 4.8 exceeds the API
     /// Gateway 30s limit): POST enqueues and returns 202 + a jobId, then we poll
     /// GET /v1/roadmaps/jobs/{jobId} until it completes or fails.
-    private static let pollInterval: Duration = .seconds(2)
-    // Full-book grounding makes real generation run longer (the worker Lambda has a
-    // 300s budget), so poll up to ~5 min to match rather than time out early.
-    private static let maxPolls = 150  // ~300s ceiling
+    static let pollInterval: Duration = .seconds(2)
+    // Full-book grounding makes real generation run long (the worker Lambda has a
+    // 600s budget). The client ceiling must be ≥ the worker budget — plus slack for
+    // the async invoke + result write-back — so we never give up on a job that the
+    // worker is still legitimately running.
+    static let maxPolls = 310  // ~620s ceiling
 
     /// How much book text to send for grounding the roadmap (and the reading-slice
     /// locators/anchor quotes). We ground on the whole book; the only hard ceiling is
