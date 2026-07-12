@@ -6,6 +6,26 @@ import Foundation
 /// rest are user-initiated from the journey-status control.
 enum JourneyEvent: CaseIterable {
     case start, activityCompleted, markFinished, reopen
+
+    /// Menu presentation (strings only — keeps this file SwiftUI-free, mirroring how
+    /// `JourneyState` owns its `title`/`symbol` in Models/Enums.swift).
+    var title: String {
+        switch self {
+        case .start: return "Start journey"
+        case .activityCompleted: return "Activity completed"  // automatic; never in menus
+        case .markFinished: return "Mark finished"
+        case .reopen: return "Reopen"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .start: return "play.fill"
+        case .activityCompleted: return "checkmark"
+        case .markFinished: return "checkmark.seal"
+        case .reopen: return "arrow.uturn.backward"
+        }
+    }
 }
 
 /// Pure journey-state transitions (SwiftData-free, like `LevelCurve`). Illegal
@@ -24,13 +44,12 @@ enum JourneyStateMachine {
         }
     }
 
-    /// Events a *user control* may offer from `state`: only real transitions (no
-    /// no-ops) and never the automatic `activityCompleted` nudge.
+    /// Events a *user control* may offer from `state`: derived from the transition
+    /// table (only real transitions, never the automatic `activityCompleted` nudge)
+    /// so it can't drift from `apply` when events or states are added.
     static func manualEvents(from state: JourneyState) -> [JourneyEvent] {
-        switch state {
-        case .notStarted: return [.start, .markFinished]
-        case .reading: return [.markFinished]
-        case .finished: return [.reopen]
+        JourneyEvent.allCases.filter { event in
+            event != .activityCompleted && apply(event, to: state) != state
         }
     }
 }

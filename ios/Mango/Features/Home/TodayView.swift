@@ -90,11 +90,14 @@ struct TodayView: View {
                         if let author = book.author {
                             Text(author).font(.subheadline).foregroundStyle(Palette.textSecondary)
                         }
-                        HStack(spacing: 6) {
-                            if let roadmap = book.roadmap {
+                        // Journey-state pill only once a roadmap exists — before that
+                        // the card's single CTA is "Build my journey", and a "Start
+                        // journey" menu item beside it would read as the same action.
+                        if let roadmap = book.roadmap {
+                            HStack(spacing: 6) {
                                 Tag("\(Int(roadmap.progress * 100))% complete", systemImage: "map", color: Palette.accent)
+                                JourneyStateControl(book: book)
                             }
-                            JourneyStateControl(book: book, compact: true)
                         }
                     }
                     Spacer(minLength: 0)

@@ -105,6 +105,11 @@ struct LessonView: View {
     }
 
     private func advance(awardedXP: Int) {
+        // Journey-state nudge (0008 #3): completing any activity is the earliest
+        // reading signal. Independent of the profile/XP bookkeeping below so a
+        // missing profile can't drop it.
+        if !completedAtOpen.contains(index) { nudgeJourneyState() }
+
         guard let profile else { return }
         let engine = GamificationEngine(context: context)
 
@@ -113,13 +118,6 @@ struct LessonView: View {
             totalXP += awardedXP
             unlocked += outcome.newlyUnlocked
             if let level = outcome.leveledUpTo { leveledTo = level }
-
-            // The single journey-state dispatch point (0008 #3): completing any
-            // activity is the earliest reading signal (nudges notStarted → reading;
-            // never touches finished — ADR-0002).
-            if let book = lesson.milestone?.roadmap?.book {
-                book.journeyState = JourneyStateMachine.apply(.activityCompleted, to: book.journeyState)
-            }
         }
 
         if index + 1 < exercises.count {
@@ -131,6 +129,10 @@ struct LessonView: View {
     }
 
     private func finishLesson() {
+        // Backstop for the zero-exercise "Mark as done" path (D7): completing a
+        // lesson is an activity signal even when no per-exercise dispatch ran.
+        nudgeJourneyState()
+
         guard let profile else { return }
         let engine = GamificationEngine(context: context)
         if !lessonWasComplete {
@@ -141,5 +143,14 @@ struct LessonView: View {
         try? context.save()
         Haptics.success()
         withAnimation { phase = .summary }
+    }
+
+    /// Nudges the book `notStarted → reading` via the state machine (no-op from any
+    /// other state — ADR-0002: nothing auto-sets `finished`). Equality-checked so
+    /// completions after the first never dirty the Book row.
+    private func nudgeJourneyState() {
+        guard let book = lesson.milestone?.roadmap?.book else { return }
+        let next = JourneyStateMachine.apply(.activityCompleted, to: book.journeyState)
+        if next != book.journeyState { book.journeyState = next }
     }
 }

@@ -73,17 +73,25 @@ struct Tag: View {
     var text: String
     var systemImage: String?
     var color: Color = Palette.accent
+    var trailingSystemImage: String?
 
-    init(_ text: String, systemImage: String? = nil, color: Color = Palette.accent) {
+    init(
+        _ text: String,
+        systemImage: String? = nil,
+        color: Color = Palette.accent,
+        trailingSystemImage: String? = nil
+    ) {
         self.text = text
         self.systemImage = systemImage
         self.color = color
+        self.trailingSystemImage = trailingSystemImage
     }
 
     var body: some View {
         HStack(spacing: 4) {
             if let systemImage { Image(systemName: systemImage) }
             Text(text)
+            if let trailingSystemImage { Image(systemName: trailingSystemImage).font(.caption2) }
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(color)
