@@ -113,6 +113,13 @@ struct LessonView: View {
             totalXP += awardedXP
             unlocked += outcome.newlyUnlocked
             if let level = outcome.leveledUpTo { leveledTo = level }
+
+            // The single journey-state dispatch point (0008 #3): completing any
+            // activity is the earliest reading signal (nudges notStarted → reading;
+            // never touches finished — ADR-0002).
+            if let book = lesson.milestone?.roadmap?.book {
+                book.journeyState = JourneyStateMachine.apply(.activityCompleted, to: book.journeyState)
+            }
         }
 
         if index + 1 < exercises.count {

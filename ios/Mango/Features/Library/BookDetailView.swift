@@ -90,6 +90,15 @@ struct BookDetailView: View {
             .disabled(isGenerating)
         }
 
+        HStack {
+            Text("Journey status")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Palette.textPrimary)
+            Spacer()
+            JourneyStateControl(book: book)
+        }
+        .padding(.top, 4)
+
         Label("Read this book on your own (Kindle, print, or library) — Mango is your activity coach, not a reader.", systemImage: "book.closed")
             .font(.footnote)
             .foregroundStyle(Palette.textSecondary)

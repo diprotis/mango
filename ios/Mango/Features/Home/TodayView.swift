@@ -90,8 +90,11 @@ struct TodayView: View {
                         if let author = book.author {
                             Text(author).font(.subheadline).foregroundStyle(Palette.textSecondary)
                         }
-                        if let roadmap = book.roadmap {
-                            Tag("\(Int(roadmap.progress * 100))% complete", systemImage: "map", color: Palette.accent)
+                        HStack(spacing: 6) {
+                            if let roadmap = book.roadmap {
+                                Tag("\(Int(roadmap.progress * 100))% complete", systemImage: "map", color: Palette.accent)
+                            }
+                            JourneyStateControl(book: book, compact: true)
                         }
                     }
                     Spacer(minLength: 0)
