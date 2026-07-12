@@ -219,8 +219,8 @@ Remaining slices (GitHub issues #3–#13, dependency order):
 
 | # | Slice | Type | Blocked by |
 |---|---|---|---|
-| S1 (#3) | `JourneyStateMachine` (4 events, §3.1 amended table) + dispatch + BookDetail/Today status control | AFK | none |
-| S2 (#11) | Roadmap-gen latency + idempotency (600s worker, poll bump, status-check no-op retry) | AFK | none |
+| S1 (#3) | ✅ **SHIPPED 2026-07-12** (`438f828`+`9f377bc`) — `JourneyStateMachine` (4 events, §3.1 amended table) + dispatch + BookDetail/Today status control | AFK | none |
+| S2 (#11) | ✅ **SHIPPED 2026-07-12** (`b121e63`, deployed beta) — Roadmap-gen latency + idempotency (600s worker, poll bump, status-check no-op retry) | AFK | none |
 | S3 (#8) | Catalog reframe ("Start journey", `start` dispatch) | AFK | S1 |
 | S4 (#6) | "What to read next?" + tab-selection binding (journey-end card keyed off `progress == 1`) | AFK | S1 |
 | S5 (#9) | Migration backfill (journeyState + reading-activity prepend onto pre-ADR-0003 roadmaps + `stableId`) | AFK | S1 |

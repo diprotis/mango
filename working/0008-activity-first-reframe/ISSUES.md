@@ -8,8 +8,8 @@ diprotis/mango --label epic:M11-reframe`). Last synced: **2026-07-12**.
 
 | Issue | Slice | Type | Blocked by | Status |
 |---|---|---|---|---|
-| [#3](https://github.com/diprotis/mango/issues/3) | `JourneyStateMachine` (4 events) + manual journey-status control | AFK | — | **ready** |
-| [#11](https://github.com/diprotis/mango/issues/11) | Roadmap-gen latency + idempotency (600s worker, matched poll, no double-gen) | AFK | — | **ready** |
+| [#3](https://github.com/diprotis/mango/issues/3) | `JourneyStateMachine` (4 events) + manual journey-status control | AFK | — | **CLOSED** (`438f828`+`9f377bc`, 2026-07-12) |
+| [#11](https://github.com/diprotis/mango/issues/11) | Roadmap-gen latency + idempotency (600s worker, matched poll, no double-gen) | AFK | — | **CLOSED** (`b121e63`, deployed beta, 2026-07-12) |
 | [#8](https://github.com/diprotis/mango/issues/8) | Catalog reframe ("Start journey", `start` dispatch) | AFK | #3 | ready |
 | [#6](https://github.com/diprotis/mango/issues/6) | "What to read next?" activity + tab-selection binding | AFK | #3 | ready |
 | [#9](https://github.com/diprotis/mango/issues/9) | Migration backfill (journeyState + reading-activity prepend + `stableId`) | AFK | #3 | ready |
