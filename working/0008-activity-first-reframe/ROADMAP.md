@@ -71,9 +71,13 @@ enum JourneyState: String, CaseIterable, Codable, Identifiable {
 }
 ```
 
-**`JourneyEvent` + `JourneyStateMachine`** — `Services/Gamification/JourneyStateMachine.swift` (new, pure, SwiftData-free):
+**`JourneyEvent` + `JourneyStateMachine`** — `Services/Gamification/JourneyStateMachine.swift` (new, pure, SwiftData-free).
+**Amended 2026-07-12 (ADR-0003 follow-through):** checkpoints no longer exist, so D3's
+`confirmReadingCheckpoint` is dead. **4 events**; completing ANY activity (reading included —
+it is activity #1 of every lesson, so in practice it fires first) is the reading signal:
+
 ```swift
-enum JourneyEvent { case start, confirmReadingCheckpoint, firstActivityCompleted, markFinished, reopen }
+enum JourneyEvent { case start, activityCompleted, markFinished, reopen }
 
 enum JourneyStateMachine {
     static func apply(_ event: JourneyEvent, to state: JourneyState) -> JourneyState
@@ -82,15 +86,14 @@ enum JourneyStateMachine {
 
 **Transition table** (illegal → no-op):
 
-| from \ event | `start` | `confirmReadingCheckpoint` | `firstActivityCompleted` | `markFinished` | `reopen` |
-|---|---|---|---|---|---|
-| `notStarted` | `reading` | **`reading`** | `reading` | `finished` | `notStarted` |
-| `reading`    | `reading` | `reading` | `reading` | `finished` | `reading` |
-| `finished`   | `finished` | `finished` | `finished` | `finished` | `reading` |
+| from \ event | `start` | `activityCompleted` | `markFinished` | `reopen` |
+|---|---|---|---|---|
+| `notStarted` | `reading` | `reading` | `finished` | `notStarted` |
+| `reading`    | `reading` | `reading` | `finished` | `reading` |
+| `finished`   | `finished` | `finished` | `finished` | `reading` |
 
-- `markFinished` allowed from any state. `firstActivityCompleted` only nudges `notStarted→reading`.
-- `confirmReadingCheckpoint` (**new, D3**) only nudges `notStarted→reading`; no-op otherwise.
-- `reopen` only `finished→reading`.
+- `markFinished` allowed from any state. `activityCompleted` only nudges `notStarted→reading`.
+- `reopen` only `finished→reading`. One dispatch point (the activity-completion path).
 
 **`JourneyGating`** — pure helper (D8), `Services/Gamification/JourneyGating.swift` (new) or alongside the state machine:
 ```swift
@@ -202,38 +205,31 @@ Then `try? context.save()` and set the flag.
 
 ---
 
-## 7. Work breakdown → phases (for `/to-issues`)
+## 7. Work breakdown → slices (rewritten 2026-07-12; tracker is authoritative)
 
-Structured as **vertical tracer-bullet slices** — each lands a testable increment with the app still building.
+The original A–F phase plan predates ADR-0003 (reading-as-activity) and the Bedrock-only
+program. **Shipped so far** (commits `5acddcc`, `5962939`, `7187061`, `16dceed`, `ef1bd10`):
+reader removed + `JourneyState` foundation (#2); reading as `ExerciseKind.reading` threaded
+per-lesson with structured locators/anchor quotes; full-book grounding (S3 spill, 300s worker);
+DirectClaude removed. **Superseded:** milestone checkpoints + `readGated` + `JourneyGating`
+(A2/A4/C1, old #4) — per-lesson reading activities replaced them; `Milestone.stableId` moved
+to the migration slice.
 
-### Phase A — Domain core (pure, no UI) · unblocks everything
-- **A1** `JourneyState` enum + `Book.journeyState` accessor; remove `readProgress`/`lastReadOffset`. *(S)*
-- **A2** `Milestone.readingConfirmed` + `Milestone.stableId` + `LessonStatus.readGated` (fix `JourneyRow` switches). *(S)*
-- **A3** `JourneyStateMachine` (5 events) + `JourneyStateMachineTests` (exhaustive table). *(M)*
-- **A4** `JourneyGating.status(...)` pure helper + `JourneyGatingTests`. *(M)*
+Remaining slices (GitHub issues #3–#13, dependency order):
 
-### Phase B — Remove the reader (cutover) · depends on A
-- **B1** Delete `ReaderView.swift`; remove `Route.reader` + nav arm; fix all references (build + grep green). *(S)*
+| # | Slice | Type | Blocked by |
+|---|---|---|---|
+| S1 (#3) | `JourneyStateMachine` (4 events, §3.1 amended table) + dispatch + BookDetail/Today status control | AFK | none |
+| S2 (#11) | Roadmap-gen latency + idempotency (600s worker, poll bump, status-check no-op retry) | AFK | none |
+| S3 (#8) | Catalog reframe ("Start journey", `start` dispatch) | AFK | S1 |
+| S4 (#6) | "What to read next?" + tab-selection binding (journey-end card keyed off `progress == 1`) | AFK | S1 |
+| S5 (#9) | Migration backfill (journeyState + reading-activity prepend onto pre-ADR-0003 roadmaps + `stableId`) | AFK | S1 |
+| S6 (#7) | Sync-ready contract: `journeyState` on `LibraryItem` | AFK | S1 |
+| S7 (#12) | On-device verification: hosted-UI sign-in + authed full-book gen on iPhone | HITL | S2 |
+| S8 (#13) | P3 cutover: remove `MockAIService`, retire offline-first, sign-in-gated generation UX | HITL | S7 |
+| S9 (#10) | Docs + manual UX/accessibility pass | HITL | S8 |
 
-### Phase C — Reframe the surfaces · depends on A, B
-- **C1** `JourneyView`: read-gated gating via `JourneyGating` + milestone checkpoint card (confirm → `confirmReadingCheckpoint` + unlock animation, reversible). *(M)*
-- **C2** `LessonView`: recap reading-phase ("read in your book", no `fullText`) + fire `firstActivityCompleted` in `finishLesson`. *(S)*
-- **C3** `BookDetailView` + `TodayView`: replace reader affordances; journey-state control; **read-gate-aware Today CTA** (D12). *(M)*
-- **C4** `CatalogView`/`CatalogSamples`: "Start journey" copy/CTA; `notStarted`→`start` on open; stale-comment cleanup. *(S)*
-
-### Phase D — "What to read next?" activity · depends on A, C
-- **D1** Minimal `TabView` selection binding (`AppTab` + `AppModel.selectedTab`). *(S)*
-- **D2** `ReadingCheckpointView` (inline) wired into journey-end + Today finished-arm; button switches tab to Catalog. *(M)*
-
-### Phase E — Migration & contract · depends on A
-- **E1** `MangoMigration.backfillJourneyState` (journey state + `stableId` + ≥1-complete checkpoint rule) from `RootView.task` + `JourneyMigrationTests` (seeded in-memory container). *(M)*
-- **E2** Contract: `journeyState` on `LibraryItem` (`openapi.yaml` + `DTOs.swift` lenient decode) + `LibraryItemDTOTests`. *(S)*
-
-### Phase F — Polish & docs
-- **F1** Docs/copy: `docs/PRODUCT_ROADMAP.md` + `docs/ARCHITECTURE.md` drop "immersive reader"; manual UX/offline/accessibility pass (Dynamic Type, VoiceOver labels, warm-theme tints). *(S)*
-
-**Dependency graph:** `A → B → C → D`, with `E` parallel to C/D (depends only on A), `F` last.
-Critical path: A3/A4 → C1 (the gating + checkpoint heart of the reframe).
+Critical path: S1 → S4/S5 (product) and S2 → S7 → S8 (Bedrock-only program), S9 last.
 
 ---
 
