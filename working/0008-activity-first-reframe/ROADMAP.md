@@ -233,19 +233,102 @@ Critical path: S1 → S4/S5 (product) and S2 → S7 → S8 (Bedrock-only program
 
 ---
 
-## 8. Acceptance criteria (updated from spec §7)
+## 8. Acceptance criteria (rewritten 2026-07-12 — the shipped 4-event, activity-first world)
 
-- [ ] **AC-1** Reader gone: no `ReaderView`/`Route.reader`/`.reader(` references; build + `make ios-test` green.
-- [ ] **AC-2** No reader affordances on BookDetail/Today; replaced per §4.2.
-- [ ] **AC-3** `JourneyStateMachine.apply` matches the §3.1 table for **all 5 events** × 3 states, incl. `confirmReadingCheckpoint` (D3) and `markFinished`-from-any.
-- [ ] **AC-4** Journey state changes from BookDetail/Today persist; **never** inferred from a reading signal; `firstActivityCompleted` auto-advances `notStarted→reading`; nothing auto-sets `finished`.
-- [ ] **AC-5** `JourneyGating.status` returns `readGated`/`available`/`locked`/`completed` correctly (pure test, D8); gate is additional to prior-lesson rule.
-- [ ] **AC-6** Lesson reading phase shows recap + "read in your book"; **never** renders `fullText`; activities award XP via the unchanged engine.
-- [ ] **AC-7** Completing a journey (`roadmap.progress == 1`) surfaces the "What to read next?" card → switches to Catalog (D11/D13).
-- [ ] **AC-8** Catalog CTA reads "Start journey", no in-app-reading copy; starting still builds a roadmap + opens Journey.
-- [ ] **AC-9** Offline first-run: sample seeds `notStarted` fully gated; user confirms M1 checkpoint **offline**, then first activity completes offline (D2).
-- [ ] **AC-10** `readProgress`/`lastReadOffset` gone; backfill maps existing books to a sensible state and **pre-confirms milestones with ≥1 completed lesson** (D4) so no in-progress user is re-gated; migration test green.
-- [ ] **AC-11** `LibraryItem.journeyState` in `openapi.yaml` + `DTOs.swift` (lenient, absent → `notStarted`); `confirmedMilestones` **not** in v1.
+> The previous §8 (derived from spec §7) predated
+> [ADR-0003](../../docs/adr/0003-reading-as-first-class-activity.md) and the Bedrock-only
+> program: its AC-3 said "5 events", and AC-5/AC-9/AC-10 described a per-milestone
+> read-gate that was never built and must not be. Rewritten to match shipped code and the
+> locked decisions in [`PLAN.md`](PLAN.md) §2; PLAN §5's out-of-scope list is binding —
+> nothing below requires per-milestone gating, a `LessonStatus` case beyond
+> `locked/available/completed`, a feature flag, or any auto-set of `finished`.
+> §§2–4 and §9 still carry historical gate-world text; the top-of-file amendment +
+> PLAN's precedence note cover those until the S9 docs pass.
+> ✅ = shipped & verified (commits in §7 / [`ISSUES.md`](ISSUES.md)). AC slot numbers are
+> stable so §2's decision-table references stay meaningful.
+
+- [x] **AC-1** Reader gone: repo-wide zero references to `ReaderView` / `Route.reader` /
+      `.reader(` / `readProgress` / `lastReadOffset`; build + `make ios-test` green.
+      *(shipped #2, `5acddcc`)*
+- [x] **AC-2** No read-in-app affordances on BookDetail/Today — "Open journey" /
+      "Build my journey" + the `JourneyStateControl` replace them; Today's CTA deep-links
+      `Route.lesson` directly (D12's gate-aware routing is moot — no gates exist).
+      *(shipped #2/#3)*
+- [x] **AC-3** `JourneyStateMachine.apply` implements **exactly the 4 events**
+      `start / activityCompleted / markFinished / reopen` per the amended §3.1 table:
+      **illegal transitions no-op** (the machine never throws), `markFinished` is allowed
+      from any state, `reopen` only `finished→reading`; `manualEvents(from:)` derives the
+      user-facing menu from the table and never offers the automatic nudge or a no-op;
+      exhaustive `JourneyStateMachineTests`. *(shipped #3, `438f828`+`9f377bc`)*
+- [x] **AC-4** Journey state is user-controlled and persisted (`Book.journeyStateRaw`);
+      only `activityCompleted` nudges `notStarted→reading` — it is the **sole automatic
+      event**, dispatched from the lesson completion path (per-exercise advance +
+      `finishLesson` backstop, equality-checked to avoid no-op writes); **nothing
+      auto-sets `finished`** — not progress, not the journey-end card, no signal of any
+      kind (manual `markFinished` only). *(shipped #3)*
+- **AC-5** — *slot retired; superseded by
+      [ADR-0003](../../docs/adr/0003-reading-as-first-class-activity.md).* The pure
+      per-milestone gating helper this slot required was never built and **must not be**:
+      reading confirmation lives in the per-lesson reading activity (AC-6), and lesson
+      availability keeps the plain prior-lesson rule over `locked/available/completed`.
+- [x] **AC-6** Every lesson **leads with a reading activity** (`ExerciseKind.reading`,
+      `order 0`): a "read in your own copy" instruction with structured locator + anchor
+      quote when generation provides them (chapter/heading + verbatim quote — **never
+      page numbers**), falling back to `readingSummary` otherwise
+      (`RoadmapBuilder.readingActivity` is the single factory; SeedData uses it too);
+      `fullText` is **never rendered** (generation cache only, ADR-0001); completing it
+      awards XP through the unchanged engine like any activity.
+      *(shipped `5962939`+`16dceed`; 8/8 verbatim anchors verified on device)*
+- [ ] **AC-7** Journey completion surfaces **`NextBookCard`** (S4/#6 — D14's inline-card
+      substance under the PLAN §2 name) at journey-end and in Today's finished-arm, keyed
+      off **`roadmap.progress == 1`** — never off `journeyState` (D11/ADR-0002; sweep A2:
+      confirm progress reaches exactly 1.0 with reading activities counted, else key
+      `>= 1`). "Find my next book" switches to the Catalog tab via the D13 binding
+      (`AppTab` + `AppModel.selectedTab`); the card **never dispatches `markFinished`**
+      (AC-4).
+- [ ] **AC-8** Catalog CTA reads **"Start journey"** and intro copy drops read-vocabulary
+      ("Discover a book and start a guided journey") in `CatalogView` + `CatalogSamples`;
+      `JourneyEvent.start` dispatches **only after the roadmap build succeeds**,
+      immediately before routing to Journey — a failed generation leaves the book
+      `notStarted` (S3/#8).
+- [x] **AC-9** Offline first-run: the sample seeds `notStarted`; its first lesson — which
+      leads with its reading activity like every lesson — completes **fully offline**,
+      auto-nudging the book to `reading` via `activityCompleted`. *(holds today; must be
+      re-verified at the #13 cutover, where offline generation dies but the seeded sample
+      loop must survive — PLAN §2 S8)*
+- [ ] **AC-10** Migration backfill (S5/#9; one-time pass guarded by
+      `mango.didBackfillJourneyState`), per PLAN §2's three amendments to §5:
+      journeyState mapping **only upgrades from `notStarted`** (a user-set or nudged
+      state is never overwritten; all-complete books are **not** forced to `finished`);
+      every pre-ADR-0003 lesson whose first ordered exercise isn't `.reading` gets the
+      fallback reading activity **prepended** (existing `order`s shifted +1,
+      `RoadmapBuilder.readingActivity` from `readingSummary`), stamped
+      `completedAt = lesson.completedAt` on already-completed lessons, **no retroactive
+      XP**; `Milestone.stableId` backfill is **duplicate-aware** (reassign when empty
+      *or* already seen — A1). Migration tests green **plus** real-device proof: no
+      state downgraded, no completed lesson shows an undone step, XP total unchanged.
+      (`readProgress`/`lastReadOffset` removal already shipped with #2.)
+- [ ] **AC-11** Sync-shaped contract (S6/#7), all three layers in one PR (G3):
+      `LibraryItem.journeyState` (enum `[notStarted, reading, finished]`, default
+      `notStarted`) in `openapi.yaml`; `LibraryItemDTO` decodes **leniently**
+      (absent/unknown → `notStarted`); `library.py` returns and persists it;
+      `confirmedMilestones` stays **out** of v1 (0014's domain). moto pytest +
+      `cdk synth -c stage=beta` green **plus** one real beta round-trip printing the
+      stored `journeyState`. The DTO stays dormant — no library client in 0008.
+- [ ] **AC-12** On-device verification (S7/#12): real Cognito hosted-UI sign-in on the
+      operator's iPhone, then an authed **full-book** generation completes within the
+      ~620s poll window and renders reading locators (A3/A4 sweeps).
+- [ ] **AC-13** Bedrock-only cutover (S8/#13): repo-wide grep for `MockAIService` and the
+      `.mock` environment returns **zero** (code, tests, previews, docs — A6);
+      fresh-install default `APIEnvironment` is **`.beta`** (Settings picker keeps
+      `personal`/`prod`); **generation — and only generation — is sign-in-gated at every
+      entry point** (Catalog and BookDetail/AddBook alike); signed-out grading keeps the
+      silent local fallback (full XP + generic praise) — **practice/grading is never
+      blocked behind auth**; airplane-mode fresh install still completes a sample lesson
+      with XP (AC-9); CLAUDE.md's offline-first invariant is rewritten in the same PR.
+- [ ] **AC-14** Docs + manual pass (S9/#10): CONTEXT.md and docs swept for dead
+      gate-world vocabulary; manual Dynamic Type + VoiceOver + warm-theme pass done and
+      noted; A8 sweep (".start moves to `reading` before any activity" copy check).
 
 ---
 
